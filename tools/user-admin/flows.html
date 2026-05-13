@@ -505,6 +505,7 @@ function selectCmd(id) {
   DATA.nodes.forEach(n => { if (!allN.has(n.id)) setNodeState(n.id, 'dim'); });
   DATA.edges.forEach(e => { if (!allE.has(e.id)) setEdgeStateDim(e.id); });
   renderSteps(cmd);
+  history.replaceState(null, '', '#scenario=' + id);
 }
 
 function resetDiagram() {
@@ -608,6 +609,17 @@ function highlightStep(cmd, idx) {
 
 // open first group by default
 document.querySelectorAll('.grp')[0]?.classList.remove('closed');
+
+// ── deep-link: restore scenario from URL hash ──────────────────
+(function () {
+  const m = location.hash.match(/^#scenario=(.+)$/);
+  if (m) selectCmd(decodeURIComponent(m[1]));
+})();
+
+window.addEventListener('popstate', () => {
+  const m = location.hash.match(/^#scenario=(.+)$/);
+  if (m) selectCmd(decodeURIComponent(m[1]));
+});
 </script>
 </body>
 </html>
