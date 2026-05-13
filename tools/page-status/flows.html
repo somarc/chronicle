@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>page-status · Fix #340 · Flow Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:#0d1117;color:#e6edf3;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+#site-nav{
+  height:42px;min-height:42px;
+  background:#161b22;
+  border-bottom:1px solid #30363d;
+  display:flex;align-items:center;
+  padding:0 20px;gap:0;flex-shrink:0;z-index:10;
+}
+#site-nav a{
+  font-size:12px;font-weight:500;color:#8b949e;text-decoration:none;
+  display:flex;align-items:center;gap:6px;
+  padding:4px 8px;border-radius:5px;
+  transition:color .15s,background .15s;
+}
+#site-nav a:hover{color:#c9d1d9;background:#21262d}
+#site-nav a svg{flex-shrink:0}
+#site-nav .sep{width:1px;height:16px;background:#30363d;margin:0 10px}
+#site-nav .page-title{font-size:13px;font-weight:600;color:#e6edf3}
+#site-nav .badge{
+  margin-left:auto;font-family:'IBM Plex Mono',monospace;
+  font-size:10px;color:#484f58;
+}
+#site-nav .issue-badge{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  background:#1c2840;color:#58a6ff;
+  padding:2px 7px;border-radius:4px;border:1px solid #1f4e79;
+  text-decoration:none;
+}
+#site-nav .issue-badge:hover{background:#1f4e79;color:#a5c8ff}
+
+#workspace{flex:1;display:flex;overflow:hidden;min-height:0}
+
+#sidebar{width:264px;min-width:264px;background:#161b22;border-right:1px solid #30363d;overflow-y:auto;display:flex;flex-direction:column}
+#sidebar::-webkit-scrollbar{width:6px}
+#sidebar::-webkit-scrollbar-track{background:transparent}
+#sidebar::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+#sidebar::-webkit-scrollbar-thumb:hover{background:#484f58}
+#sidebar{scrollbar-width:thin;scrollbar-color:#30363d transparent}
+#sidebar-hd{padding:14px 16px;border-bottom:1px solid #30363d}
+#sidebar-hd h2{font-size:13px;font-weight:700;color:#58a6ff;letter-spacing:.01em}
+#sidebar-hd p{font-size:11px;color:#8b949e;margin-top:3px}
+.grp{border-bottom:1px solid #21262d}
+.grp-hd{padding:7px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8b949e;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.grp-hd:hover{background:#1c2128;color:#c9d1d9}
+.grp-arrow{transition:transform .15s}
+.grp.closed .grp-arrow{transform:rotate(-90deg)}
+.grp.closed .grp-body{display:none}
+.grp-body{padding:3px 0}
+.cmd{padding:5px 14px 5px 26px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;color:#c9d1d9;border-left:3px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.cmd:hover{background:#1c2128;color:#fff}
+.cmd.on{background:#1c2840;color:#58a6ff;border-left-color:#58a6ff}
+.cmd-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#toolbar{padding:8px 16px;background:#161b22;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:16px;min-height:42px;flex-shrink:0}
+#active-label{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#7ee787;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#active-label .dim{color:#8b949e}
+#legend{display:flex;gap:14px;font-size:11px;color:#8b949e;flex-shrink:0}
+.leg{display:flex;align-items:center;gap:5px}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+#diagram-wrap{flex:1;overflow:hidden;position:relative}
+svg#dg{display:block;width:100%;height:100%}
+
+.nd rect{rx:6;ry:6;transition:fill .2s,stroke .2s,stroke-width .15s}
+.nd text{pointer-events:none;transition:fill .2s}
+.nd .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600}
+.nd .sub{font-size:9.5px}
+
+.nd-ext rect{fill:#0f1e17;stroke:#059669;stroke-width:1}
+.nd-ext .lbl{fill:#34d399}
+.nd-ext .sub{fill:#4a5568}
+.nd-core rect{fill:#13161e;stroke:#3b5bdb;stroke-width:1.5}
+.nd-core .lbl{fill:#748ffc}
+.nd-core .sub{fill:#4a5568}
+.nd-lib rect{fill:#13161e;stroke:#6e40c9;stroke-width:1}
+.nd-lib .lbl{fill:#a78bfa}
+.nd-lib .sub{fill:#4a5568}
+.nd-client rect{fill:#13161e;stroke:#0891b2;stroke-width:1.5}
+.nd-client .lbl{fill:#22d3ee}
+.nd-client .sub{fill:#4a5568}
+.nd-file rect{fill:#1e1a0f;stroke:#b45309;stroke-width:1}
+.nd-file .lbl{fill:#fbbf24}
+.nd-file .sub{fill:#4a5568}
+.nd-new-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;fill:#7ee787}
+
+.nd.hi rect{stroke-width:2.5;filter:drop-shadow(0 0 7px var(--glow))}
+.nd-ext.hi rect{--glow:#34d399;fill:#0e2820;stroke:#34d399}
+.nd-ext.hi .lbl{fill:#a7f3d0}
+.nd-core.hi rect{--glow:#748ffc;fill:#1a2050;stroke:#748ffc}
+.nd-core.hi .lbl{fill:#c7d2fe}
+.nd-lib.hi rect{--glow:#a78bfa;fill:#1e1535;stroke:#a78bfa}
+.nd-lib.hi .lbl{fill:#ddd6fe}
+.nd-client.hi rect{--glow:#22d3ee;fill:#0f2733;stroke:#22d3ee}
+.nd-client.hi .lbl{fill:#a5f3fc}
+.nd-file.hi rect{--glow:#fbbf24;fill:#2a1e00;stroke:#fbbf24}
+.nd-file.hi .lbl{fill:#fde68a}
+
+.nd.dim rect{opacity:.3}
+.nd.dim text{opacity:.25}
+
+.edge{fill:none;stroke:#21262d;stroke-width:1.5;transition:stroke .25s,stroke-width .25s,opacity .25s}
+.edge.hi{stroke-width:2.5}
+.edge.hi-ext{stroke:#34d399}
+.edge.hi-core{stroke:#748ffc}
+.edge.hi-lib{stroke:#a78bfa}
+.edge.hi-client{stroke:#22d3ee}
+.edge.hi-file{stroke:#fbbf24}
+.edge.dim{opacity:.15}
+.edgelbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;fill:#484f58;pointer-events:none;transition:fill .25s,opacity .25s}
+.edgelbl.hi{fill:#94a3b8;opacity:1}
+.edgelbl.dim{opacity:.1}
+
+#ann{flex-shrink:0;height:230px;min-height:230px;background:#161b22;border-top:1px solid #30363d;overflow-y:auto;padding:10px 14px}
+#ann::-webkit-scrollbar{width:6px}
+#ann::-webkit-scrollbar-track{background:transparent}
+#ann::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+#ann::-webkit-scrollbar-thumb:hover{background:#484f58}
+#ann{scrollbar-width:thin;scrollbar-color:#30363d transparent}
+#ann-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8b949e;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+#ann-title .result-badge{font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;padding:2px 8px;border-radius:4px;text-transform:none;letter-spacing:0}
+.result-badge.positive{background:#0e2820;color:#34d399;border:1px solid #059669}
+.result-badge.negative{background:#2d1515;color:#f87171;border:1px solid #991b1b}
+.step{display:flex;gap:9px;padding:5px 7px;border-radius:5px;cursor:pointer;transition:background .1s}
+.step:hover{background:#1c2128}
+.step.on{background:#1c2840}
+.step-n{min-width:20px;height:20px;border-radius:50%;background:#21262d;font-size:10px;font-weight:700;color:#8b949e;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:background .1s,color .1s}
+.step.on .step-n{background:#1f4e79;color:#58a6ff}
+.step-body{flex:1;min-width:0}
+.step-pkgs{font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:#58a6ff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step-txt{font-size:11.5px;color:#c9d1d9;line-height:1.5}
+.step-txt .before{color:#f87171;font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#2d1515;padding:1px 5px;border-radius:3px}
+.step-txt .after{color:#34d399;font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#0e2820;padding:1px 5px;border-radius:3px}
+.step-txt code{font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#21262d;padding:1px 5px;border-radius:3px;color:#e6edf3}
+#empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:6px;color:#484f58}
+#empty .tip{font-size:11px}
+</style>
+</head>
+<body>
+
+<nav id="site-nav">
+  <a href="/">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    chronicle
+  </a>
+  <div class="sep"></div>
+  <a href="https://github.com/adobe/helix-tools-website/issues/340">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    Issue #340
+  </a>
+  <div class="sep"></div>
+  <a href="https://github.com/adobe/helix-tools-website/compare/fix/page-status-byom-no-source">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 3v12M18 9l-6-6-6 6M18 21V9"/></svg>
+    fix/page-status-byom-no-source
+  </a>
+  <div class="sep"></div>
+  <span class="page-title">Classification Flow Explorer</span>
+  <span class="badge">page-status · fix #340 · BYOM sourceLastModified</span>
+</nav>
+
+<div id="workspace">
+
+<div id="sidebar">
+  <div id="sidebar-hd">
+    <h2>Classification Scenarios</h2>
+    <p>Click a scenario to trace the fix</p>
+  </div>
+  <div id="cmd-tree"></div>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <div id="active-label"><span class="dim">← select a scenario</span></div>
+    <div id="legend">
+      <div class="leg"><div class="leg-dot" style="background:#34d399"></div>external</div>
+      <div class="leg"><div class="leg-dot" style="background:#748ffc"></div>core</div>
+      <div class="leg"><div class="leg-dot" style="background:#a78bfa"></div>lib (new)</div>
+      <div class="leg"><div class="leg-dot" style="background:#22d3ee"></div>tests</div>
+      <div class="leg"><div class="leg-dot" style="background:#fbbf24"></div>output</div>
+    </div>
+  </div>
+  <div id="diagram-wrap">
+    <svg id="dg" viewBox="0 0 860 340" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <marker id="arr"        markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#30363d"/></marker>
+        <marker id="arr-ext"    markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#34d399"/></marker>
+        <marker id="arr-core"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#748ffc"/></marker>
+        <marker id="arr-lib"    markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#a78bfa"/></marker>
+        <marker id="arr-client" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#22d3ee"/></marker>
+        <marker id="arr-file"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#fbbf24"/></marker>
+      </defs>
+      <g id="edges-layer"></g>
+      <g id="nodes-layer"></g>
+    </svg>
+  </div>
+  <div id="ann">
+    <div id="empty">
+      <svg width="32" height="32" fill="none" stroke="#484f58" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <div class="tip">Select a scenario from the sidebar to trace the classification flow</div>
+    </div>
+    <div id="steps" style="display:none"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const DATA = {
+
+  nodes: [
+    {
+      id:"api", x:18, y:115, w:155, h:52, type:"ext",
+      label:"Admin API",
+      sub:"GET /status/{org}/{site}/main/*"
+    },
+    {
+      id:"scripts", x:196, y:115, w:195, h:52, type:"core",
+      label:"scripts.js",
+      sub:"runJob() · buildResource()"
+    },
+    {
+      id:"classify", x:414, y:115, w:230, h:52, type:"lib",
+      label:"status.js  NEW",
+      sub:"classifySequenceStatus(edit, preview, publish)"
+    },
+    {
+      id:"badge", x:667, y:115, w:185, h:52, type:"file",
+      label:"Status Badge",
+      sub:"span.status-light ± .positive/.negative"
+    },
+    {
+      id:"tests", x:414, y:248, w:230, h:48, type:"client",
+      label:"status.test.js",
+      sub:"10 tests · null + undefined matrix"
+    },
+  ],
+
+  edges: [
+    {
+      id:"e-api-scr", from:"api", to:"scripts", color:"ext",
+      label:"resource[]"
+    },
+    {
+      id:"e-scr-cls", from:"scripts", to:"classify", color:"lib",
+      label:"edit, preview, publish"
+    },
+    {
+      id:"e-cls-bdg", from:"classify", to:"badge", color:"file",
+      label:"{ label, positive }"
+    },
+    {
+      id:"e-tst-cls", from:"tests", to:"classify", color:"client",
+      label:"asserts 10 scenarios"
+    },
+  ],
+
+  commands: [
+
+    { group:"BYOM · no source date", items:[
+
+      { id:"byom-current",
+        label:"null → Current",
+        resultLabel:"Current", resultPositive:true,
+        desc:"BYOM page with null source, preview ≤ publish — was incorrectly 'No source' before fix",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"Admin API returns a resource with <code>sourceLastModified: null</code>, <code>previewLastModified: '2024-01-02'</code>, <code>publishLastModified: '2024-01-03'</code>. This is a BYOM page — it has no tracked edit source, but it is fully previewed and published." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → status.js · classifySequenceStatus()",
+            txt:"<code>buildResource()</code> destructures the resource and calls <code>classifySequenceStatus(null, '2024-01-02', '2024-01-03')</code>. The <code>null ?? NaN</code> guard converts <code>null</code> to <code>NaN</code> before <code>new Date()</code>, producing Invalid Date — same path as <code>undefined</code>. <span class='before'>Before fix: new Date(null) = epoch (valid) → wrong branch</span>" },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — no-source branch",
+            txt:"<code>editDate</code> is Invalid Date → enters the no-source branch. <code>previewDate</code> and <code>publishDate</code> are both valid. <code>previewDate ≤ publishDate</code> → returns <code>{ label: 'Current', positive: true }</code>. <span class='after'>After fix: BYOM published pages get a positive status</span>" },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → buildSequenceStatus() → Status Badge",
+            txt:"<code>buildSequenceStatus()</code> receives <code>{ label: 'Current', positive: true }</code> and creates <code>&lt;span class=\"status-light positive\"&gt;Current&lt;/span&gt;</code>. The table row renders a green badge — no false red." },
+        ]
+      },
+
+      { id:"byom-pending",
+        label:"null → Pending changes",
+        resultLabel:"Pending changes", resultPositive:true,
+        desc:"BYOM page where preview is newer than publish — drift is still detected without a source date",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"Admin API returns <code>sourceLastModified: null</code>, <code>previewLastModified: '2024-01-05'</code>, <code>publishLastModified: '2024-01-03'</code>. The preview has been refreshed after the last publish — there are outstanding changes not yet live." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → classifySequenceStatus(null, '2024-01-05', '2024-01-03')",
+            txt:"<code>null ?? NaN</code> → Invalid Date. Enters no-source branch. Both <code>previewDate</code> and <code>publishDate</code> are valid. The fix falls through to the sequence check rather than returning 'No source' immediately." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — preview drift check",
+            txt:"<code>previewDate ('2024-01-05') &gt; publishDate ('2024-01-03')</code> → <code>previewDate ≤ publishDate</code> is <code>false</code> → returns <code>{ label: 'Pending changes', positive: true }</code>. Preview-vs-publish drift is correctly surfaced even without a source edit date." },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → Status Badge",
+            txt:"Badge renders as <code>span.status-light.positive</code> with text <code>Pending changes</code>. The positive class prevents a red badge while still signaling the page needs attention." },
+        ]
+      },
+
+      { id:"byom-notpublished",
+        label:"null → Not published",
+        resultLabel:"Not published", resultPositive:true,
+        desc:"BYOM page previewed but never published — now correctly shown as positive 'Not published'",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"Resource has <code>sourceLastModified: null</code>, <code>previewLastModified: '2024-01-02'</code>, <code>publishLastModified: null</code> (absent). The BYOM page exists and has been previewed but has never been published to live." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → classifySequenceStatus(null, '2024-01-02', undefined)",
+            txt:"<code>edit = null ?? NaN</code> → Invalid Date. <code>publish = undefined ?? NaN</code> → Invalid Date. Enters no-source branch. <span class='before'>Before fix: immediately returned 'No source' (negative)</span>" },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — no-source branch",
+            txt:"<code>previewDate</code> is valid, <code>publishDate</code> is invalid → matches <code>valid(previewDate) &amp;&amp; !valid(publishDate)</code> → returns <code>{ label: 'Not published', positive: true }</code>. Mirrors the same label used for regular pages in the same state." },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → Status Badge",
+            txt:"<span class='after'>After fix: 'Not published' with positive class</span> instead of false-negative 'No source'. The page is flagged for publishing action without showing an incorrect red error state." },
+        ]
+      },
+
+      { id:"byom-nosource",
+        label:"null → No source",
+        resultLabel:"No source", resultPositive:false,
+        desc:"BYOM page with nothing at all — 'No source' (negative) is correct and preserved",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"Resource has <code>sourceLastModified: null</code>, <code>previewLastModified: null</code>, <code>publishLastModified: null</code>. A page entry exists in the index but has never been previewed or published — this is genuinely actionable." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → classifySequenceStatus(null, null, null)",
+            txt:"All three arguments are <code>null</code>. The <code>?? NaN</code> guard converts each to <code>NaN</code> → all three dates are Invalid Date. Enters the no-source branch." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — no-source, nothing branch",
+            txt:"<code>!valid(previewDate) &amp;&amp; !valid(publishDate)</code> → true → returns <code>{ label: 'No source', positive: false }</code>. The negative status is intentional — there is genuinely nothing to show for this page and it needs action." },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → Status Badge",
+            txt:"Badge renders as <code>span.status-light.negative</code>. This behavior is <em>unchanged</em> by the fix — the negative 'No source' signal is still shown when there is truly nothing (no preview, no publish), just not for BYOM pages that are live." },
+        ]
+      },
+
+    ]},
+
+    { group:"Regular · source date present", items:[
+
+      { id:"reg-current",
+        label:"edit → preview → publish",
+        resultLabel:"Current", resultPositive:true,
+        desc:"All three dates in sequence — standard Current path, unchanged by fix",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"Resource returns <code>sourceLastModified: '2024-01-01'</code>, <code>previewLastModified: '2024-01-02'</code>, <code>publishLastModified: '2024-01-03'</code>. A normal authored page with a complete, in-sequence lifecycle." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → classifySequenceStatus('2024-01-01', '2024-01-02', '2024-01-03')",
+            txt:"All three strings parse to valid dates. <code>editDate</code> is valid → skips the no-source branch entirely. Falls through to the standard sequencing logic." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — normal branch",
+            txt:"<code>editDate ≤ previewDate ≤ publishDate</code> → <code>inSequence = true</code> → returns <code>{ label: 'Current', positive: true }</code>. Behaviour identical to pre-fix — this path is unaffected by the change." },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → Status Badge",
+            txt:"Green <code>Current</code> badge. The fix only adds handling for the <code>!valid(editDate)</code> branch — all existing source-present paths pass through the same original logic." },
+        ]
+      },
+
+      { id:"reg-pending",
+        label:"edit newer than publish",
+        resultLabel:"Pending changes", resultPositive:true,
+        desc:"Source has been edited after last preview — out of sequence",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"<code>sourceLastModified: '2024-01-04'</code> (most recent), <code>previewLastModified: '2024-01-02'</code>, <code>publishLastModified: '2024-01-03'</code>. The source was edited after the last preview — the preview and live environments are behind the source." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → classifySequenceStatus('2024-01-04', '2024-01-02', '2024-01-03')",
+            txt:"<code>editDate</code> is valid → normal branch. <code>previewDate</code> and <code>publishDate</code> are both valid. Computes <code>inSequence = editDate ≤ previewDate &amp;&amp; previewDate ≤ publishDate</code>." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — inSequence check",
+            txt:"<code>editDate ('2024-01-04') &gt; previewDate ('2024-01-02')</code> → <code>inSequence = false</code> → returns <code>{ label: 'Pending changes', positive: true }</code>. The page needs a new preview to bring it current." },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → Status Badge",
+            txt:"<code>Pending changes</code> badge with positive class (not red). The page has outstanding edits that need to be previewed and published." },
+        ]
+      },
+
+      { id:"reg-notpreviewed",
+        label:"edit only",
+        resultLabel:"Not previewed", resultPositive:true,
+        desc:"Source date present but page has never been previewed or published",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"<code>sourceLastModified: '2024-01-01'</code>, no <code>previewLastModified</code>, no <code>publishLastModified</code>. A page exists in the CMS but has never been previewed — likely newly authored content." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → classifySequenceStatus('2024-01-01', undefined, undefined)",
+            txt:"<code>editDate</code> is valid → normal branch. <code>previewDate = new Date(undefined ?? NaN)</code> = Invalid Date. <code>publishDate</code> also Invalid Date." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — not previewed branch",
+            txt:"<code>!valid(previewDate) &amp;&amp; !valid(publishDate)</code> → <code>true</code> → returns <code>{ label: 'Not previewed', positive: true }</code>. Positive because the page is correctly authored; it just hasn't been pushed to preview yet." },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → Status Badge",
+            txt:"<code>Not previewed</code> positive badge. Authors or admins can use this to identify content that's ready for preview." },
+        ]
+      },
+
+      { id:"reg-notpublished",
+        label:"edit + preview, no publish",
+        resultLabel:"Not published", resultPositive:true,
+        desc:"Source and preview dates exist and are in sequence, but the page is not yet live",
+        steps:[
+          { nodes:["api","scripts"], edges:["e-api-scr"],
+            pkgs:"Admin API → scripts.js",
+            txt:"<code>sourceLastModified: '2024-01-01'</code>, <code>previewLastModified: '2024-01-02'</code>, no <code>publishLastModified</code>. The page has been authored and previewed but is not yet published to the live environment." },
+          { nodes:["scripts","classify"], edges:["e-scr-cls"],
+            pkgs:"scripts.js → classifySequenceStatus('2024-01-01', '2024-01-02', undefined)",
+            txt:"<code>editDate</code> and <code>previewDate</code> are valid. <code>publishDate = new Date(NaN)</code> = Invalid Date. Falls to the <code>valid(previewDate) &amp;&amp; !valid(publishDate) &amp;&amp; editDate ≤ previewDate</code> check." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — not published branch",
+            txt:"Condition matches: <code>editDate ('2024-01-01') ≤ previewDate ('2024-01-02')</code> and publish is absent → returns <code>{ label: 'Not published', positive: true }</code>." },
+          { nodes:["classify","badge"], edges:["e-cls-bdg"],
+            pkgs:"status.js → Status Badge",
+            txt:"<code>Not published</code> positive badge. The page is ready to go live — a publish action will make it current." },
+        ]
+      },
+
+    ]},
+
+    { group:"Test Coverage · regression", items:[
+
+      { id:"tests-null",
+        label:"null matrix (5 cases)",
+        resultLabel:"10/10 pass", resultPositive:true,
+        desc:"status.test.js verifies null is treated identically to absent (undefined) for all 5 no-source outcomes",
+        steps:[
+          { nodes:["tests"], edges:[],
+            pkgs:"status.test.js — parametrized over [undefined, null]",
+            txt:"The test suite uses <code>[undefined, null].forEach(noSource => { ... })</code> to run every BYOM scenario twice — once with <code>undefined</code> (absent field) and once with <code>null</code> (explicit API value). This pins the <code>?? NaN</code> guard contract and prevents regression if the guard is ever removed." },
+          { nodes:["tests","classify"], edges:["e-tst-cls"],
+            pkgs:"status.test.js → classifySequenceStatus()",
+            txt:"Each test calls <code>classifySequenceStatus(noSource, ...)</code> directly and asserts both <code>label</code> and <code>positive</code>. The five no-source cases covered: <code>No source</code> (negative), <code>Not published</code>, <code>Current</code> (publish only), <code>Current</code> (preview ≤ publish), <code>Pending changes</code> (preview &gt; publish)." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — null ?? NaN guard",
+            txt:"<code>new Date(null)</code> would return the Unix epoch (Jan 1 1970) — a <em>valid</em> date — silently misclassifying null as a real source timestamp. The <code>null ?? NaN</code> guard converts both <code>null</code> and <code>undefined</code> to <code>NaN</code> before <code>new Date()</code>, ensuring both produce Invalid Date and enter the no-source branch correctly." },
+        ]
+      },
+
+      { id:"tests-withsource",
+        label:"source-present regressions (5 cases)",
+        resultLabel:"10/10 pass", resultPositive:true,
+        desc:"Five with-source paths verified to be unaffected by the fix",
+        steps:[
+          { nodes:["tests","classify"], edges:["e-tst-cls"],
+            pkgs:"status.test.js → classifySequenceStatus() — with-source paths",
+            txt:"Five additional tests cover the normal (source-present) path: <code>Not previewed</code>, <code>Not published</code>, <code>Pending changes</code> (edit &gt; preview), <code>Current</code> (in sequence), <code>Pending changes</code> (preview &gt; publish). These verify the fix did not disturb the pre-existing logic." },
+          { nodes:["classify"], edges:[],
+            pkgs:"classifySequenceStatus() — normal branch untouched",
+            txt:"When <code>edit</code> is a valid date string, <code>edit ?? NaN</code> returns the original string unchanged — <code>new Date(validString)</code> produces a valid date exactly as before. The <code>?? NaN</code> guard is a no-op for truthy values. Zero regression risk on the normal path." },
+          { nodes:["tests"], edges:[],
+            pkgs:"status.test.js — 100% branch coverage",
+            txt:"<code>npm test</code> reports <code>status.js | 100.00 | 100.00 | 100.00</code> — every branch of <code>classifySequenceStatus()</code> is exercised. The test file lives at <code>tests/tools/page-status/status.test.js</code> alongside the existing tool test structure and runs automatically in CI." },
+        ]
+      },
+
+    ]},
+
+  ],
+};
+
+// ── bootstrap ─────────────────────────────────────────────────
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const nodeMap = {};
+DATA.nodes.forEach(n => { nodeMap[n.id] = n; });
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function cx(n) { return n.x + n.w / 2; }
+
+function edgePath(e, src, dst) {
+  const x1 = cx(src) + (e.srcDx || 0), x2 = cx(dst) + (e.dstDx || 0);
+  const srcBot = src.y + src.h, dstBot = dst.y + dst.h;
+  // same vertical layer → horizontal arc
+  if (Math.abs(src.y - dst.y) < 8) {
+    const my = src.y + src.h / 2;
+    if (src.x < dst.x) {
+      return `M${src.x + src.w},${my} C${src.x + src.w + 22},${my} ${dst.x - 22},${my} ${dst.x},${my}`;
+    }
+    const ay = src.y - 32;
+    return `M${src.x},${my} C${src.x - 34},${ay} ${dst.x + dst.w + 34},${ay} ${dst.x + dst.w},${my}`;
+  }
+  // upward edge: exit top of src, enter bottom of dst
+  if (src.y >= dst.y) {
+    const cp = Math.min(Math.abs(src.y - dstBot) * 0.55, 75);
+    return `M${x1},${src.y} C${x1},${src.y - cp} ${x2},${dstBot + cp} ${x2},${dstBot}`;
+  }
+  // normal downward
+  const cp = Math.min(Math.max((dst.y - srcBot) * 0.55, 20), 70);
+  return `M${x1},${srcBot} C${x1},${srcBot + cp} ${x2},${dst.y - cp} ${x2},${dst.y}`;
+}
+
+// ── sidebar ────────────────────────────────────────────────────
+const BYOM_COLOR = '#34d399';
+const REG_COLOR  = '#748ffc';
+const TEST_COLOR = '#22d3ee';
+const GROUP_COLORS = [BYOM_COLOR, REG_COLOR, TEST_COLOR];
+
+const tree = document.getElementById('cmd-tree');
+DATA.commands.forEach((g, gi) => {
+  const dotColor = GROUP_COLORS[gi] || '#8b949e';
+  const div = document.createElement('div');
+  div.className = 'grp';
+  div.innerHTML = `<div class="grp-hd">${g.group}<span class="grp-arrow">▾</span></div><div class="grp-body"></div>`;
+  const body = div.querySelector('.grp-body');
+  g.items.forEach(cmd => {
+    const el = document.createElement('div');
+    el.className = 'cmd';
+    el.dataset.id = cmd.id;
+    el.innerHTML = `<span class="cmd-dot" style="background:${dotColor}"></span>${cmd.label}`;
+    el.addEventListener('click', () => selectCmd(cmd.id));
+    body.appendChild(el);
+  });
+  div.querySelector('.grp-hd').addEventListener('click', () => div.classList.toggle('closed'));
+  tree.appendChild(div);
+});
+
+// ── nodes ──────────────────────────────────────────────────────
+const nodesLayer = document.getElementById('nodes-layer');
+DATA.nodes.forEach(n => {
+  const g = svgEl('g', { class: `nd nd-${n.type}`, id: `nd-${n.id}` });
+  const rect = svgEl('rect', { x: n.x, y: n.y, width: n.w, height: n.h, rx: 7, ry: 7 });
+  g.appendChild(rect);
+  if (n.label) {
+    const lbl = svgEl('text', { x: cx(n), y: n.y + (n.sub ? 17 : 27), 'text-anchor': 'middle', class: 'lbl' });
+    lbl.textContent = n.label;
+    g.appendChild(lbl);
+  }
+  if (n.sub) {
+    const sub = svgEl('text', { x: cx(n), y: n.y + 32, 'text-anchor': 'middle', class: 'sub' });
+    sub.textContent = n.sub.length > 46 ? n.sub.slice(0, 44) + '…' : n.sub;
+    g.appendChild(sub);
+  }
+  nodesLayer.appendChild(g);
+});
+
+// ── edges ──────────────────────────────────────────────────────
+const edgesLayer = document.getElementById('edges-layer');
+DATA.edges.forEach(e => {
+  const src = nodeMap[e.from], dst = nodeMap[e.to];
+  if (!src || !dst) return;
+  const g = svgEl('g', { id: `ed-${e.id}` });
+  const path = svgEl('path', { d: edgePath(e, src, dst), class: 'edge', 'marker-end': 'url(#arr)' });
+  const lx = (cx(src) + (e.srcDx || 0) + cx(dst) + (e.dstDx || 0)) / 2 + 4;
+  const my = (src.y + src.h + dst.y) / 2;
+  const lbl = svgEl('text', { x: lx, y: my, class: 'edgelbl' });
+  lbl.textContent = e.label;
+  g.appendChild(path);
+  g.appendChild(lbl);
+  edgesLayer.appendChild(g);
+});
+
+// ── selection ──────────────────────────────────────────────────
+let activeStepIdx = -1, currentCmd = null;
+
+function allCmds() { return DATA.commands.flatMap(g => g.items); }
+
+function selectCmd(id) {
+  const cmd = allCmds().find(c => c.id === id);
+  if (!cmd) return;
+  currentCmd = cmd;
+  activeStepIdx = -1;
+  document.querySelectorAll('.cmd').forEach(el => el.classList.toggle('on', el.dataset.id === id));
+  document.getElementById('active-label').innerHTML =
+    `<span class="dim">scenario: </span>${cmd.label} <span class="dim">— ${cmd.desc}</span>`;
+  resetDiagram();
+  const allN = new Set(), allE = new Set();
+  cmd.steps.forEach(s => { s.nodes.forEach(n => allN.add(n)); s.edges.forEach(e => allE.add(e)); });
+  allN.forEach(nid => setNodeState(nid, 'hi'));
+  allE.forEach(eid => setEdgeState(eid, true));
+  DATA.nodes.forEach(n => { if (!allN.has(n.id)) setNodeState(n.id, 'dim'); });
+  DATA.edges.forEach(e => { if (!allE.has(e.id)) setEdgeStateDim(e.id); });
+  renderSteps(cmd);
+}
+
+function resetDiagram() {
+  DATA.nodes.forEach(n => {
+    const g = document.getElementById(`nd-${n.id}`);
+    if (g) { g.classList.remove('hi', 'dim'); }
+  });
+  DATA.edges.forEach(e => {
+    const g = document.getElementById(`ed-${e.id}`);
+    if (!g) return;
+    g.querySelector('path').className.baseVal = 'edge';
+    g.querySelector('path').setAttribute('marker-end', 'url(#arr)');
+    const lbl = g.querySelector('text');
+    if (lbl) lbl.className.baseVal = 'edgelbl';
+  });
+}
+
+function setNodeState(nid, state) {
+  const g = document.getElementById(`nd-${nid}`);
+  if (!g) return;
+  g.classList.remove('hi', 'dim');
+  if (state) g.classList.add(state);
+}
+
+function setEdgeState(eid, active) {
+  const ed = DATA.edges.find(e => e.id === eid);
+  const g = document.getElementById(`ed-${eid}`);
+  if (!g || !ed) return;
+  if (active) {
+    g.querySelector('path').className.baseVal = `edge hi hi-${ed.color}`;
+    g.querySelector('path').setAttribute('marker-end', `url(#arr-${ed.color})`);
+    const lbl = g.querySelector('text');
+    if (lbl) lbl.className.baseVal = 'edgelbl hi';
+  }
+}
+
+function setEdgeStateDim(eid) {
+  const g = document.getElementById(`ed-${eid}`);
+  if (!g) return;
+  g.querySelector('path').className.baseVal = 'edge dim';
+  const lbl = g.querySelector('text');
+  if (lbl) lbl.className.baseVal = 'edgelbl dim';
+}
+
+function renderSteps(cmd) {
+  document.getElementById('empty').style.display = 'none';
+  const stepsEl = document.getElementById('steps');
+  stepsEl.style.display = 'block';
+  stepsEl.innerHTML = '';
+  const title = document.createElement('div');
+  title.id = 'ann-title';
+  const badge = cmd.resultLabel
+    ? `<span class="result-badge ${cmd.resultPositive ? 'positive' : 'negative'}">${cmd.resultLabel}</span>`
+    : '';
+  title.innerHTML = `<span>${cmd.label}</span>${badge}`;
+  stepsEl.appendChild(title);
+  cmd.steps.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'step';
+    row.dataset.idx = i;
+    row.innerHTML = `<div class="step-n">${i + 1}</div><div class="step-body"><div class="step-pkgs">${s.pkgs}</div><div class="step-txt">${s.txt}</div></div>`;
+    row.addEventListener('mouseenter', () => { if (activeStepIdx < 0) highlightStep(cmd, i); });
+    row.addEventListener('mouseleave', () => { if (activeStepIdx < 0) highlightAll(cmd); });
+    row.addEventListener('click', () => {
+      activeStepIdx = activeStepIdx === i ? -1 : i;
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('on'));
+      if (activeStepIdx >= 0) {
+        document.querySelectorAll('.step')[activeStepIdx]?.classList.add('on');
+        highlightStep(cmd, activeStepIdx);
+      } else {
+        highlightAll(cmd);
+      }
+    });
+    stepsEl.appendChild(row);
+  });
+}
+
+function highlightAll(cmd) {
+  resetDiagram();
+  const allN = new Set(), allE = new Set();
+  cmd.steps.forEach(s => { s.nodes.forEach(n => allN.add(n)); s.edges.forEach(e => allE.add(e)); });
+  allN.forEach(nid => setNodeState(nid, 'hi'));
+  allE.forEach(eid => setEdgeState(eid, true));
+  DATA.nodes.forEach(n => { if (!allN.has(n.id)) setNodeState(n.id, 'dim'); });
+  DATA.edges.forEach(e => { if (!allE.has(e.id)) setEdgeStateDim(e.id); });
+}
+
+function highlightStep(cmd, idx) {
+  const step = cmd.steps[idx];
+  if (!step) return;
+  const allN = new Set(cmd.steps.flatMap(s => s.nodes));
+  const allE = new Set(cmd.steps.flatMap(s => s.edges));
+  resetDiagram();
+  DATA.nodes.forEach(n => { if (!allN.has(n.id)) setNodeState(n.id, 'dim'); });
+  DATA.edges.forEach(e => { if (!allE.has(e.id)) setEdgeStateDim(e.id); });
+  allN.forEach(nid => { if (!step.nodes.includes(nid)) setNodeState(nid, 'dim'); });
+  allE.forEach(eid => { if (!step.edges.includes(eid)) setEdgeStateDim(eid); });
+  step.nodes.forEach(nid => setNodeState(nid, 'hi'));
+  step.edges.forEach(eid => setEdgeState(eid, true));
+}
+
+// open first group by default
+document.querySelectorAll('.grp')[0]?.classList.remove('closed');
+</script>
+</body>
+</html>

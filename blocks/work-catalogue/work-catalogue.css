@@ -1,0 +1,213 @@
+.work-catalogue {
+  --wc-bg: #0d1117;
+  --wc-surface: #161b22;
+  --wc-border: #30363d;
+  --wc-text: #e6edf3;
+  --wc-muted: #8b949e;
+  --wc-accent: #58a6ff;
+  --wc-accent-bg: #1c2840;
+  --wc-accent-border: #1f4e79;
+  --wc-green: #34d399;
+  --wc-hover: #21262d;
+  --wc-active: #1c2128;
+
+  background: var(--wc-bg);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  padding: 0;
+}
+
+.work-catalogue .wc-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--wc-surface);
+  border-bottom: 1px solid var(--wc-border);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+}
+
+.work-catalogue .wc-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--wc-bg);
+  border: 1px solid var(--wc-border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.work-catalogue .wc-tab {
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--wc-muted);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.work-catalogue .wc-tab:hover {
+  background: var(--wc-hover);
+  color: var(--wc-text);
+}
+
+.work-catalogue .wc-tab-active {
+  background: var(--wc-active);
+  color: var(--wc-accent);
+}
+
+.work-catalogue .wc-content {
+  padding: 24px 20px;
+}
+
+.work-catalogue .wc-loading,
+.work-catalogue .wc-empty {
+  color: var(--wc-muted);
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+.work-catalogue .wc-group {
+  margin-bottom: 36px;
+}
+
+.work-catalogue .wc-group-hd {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--wc-muted);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--wc-border);
+  margin-bottom: 16px;
+}
+
+.work-catalogue .wc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (width >= 600px) {
+  .work-catalogue .wc-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (width >= 1200px) {
+  .work-catalogue .wc-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.work-catalogue .wc-card {
+  background: var(--wc-surface);
+  border: 1px solid var(--wc-border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+
+.work-catalogue .wc-card:hover {
+  border-color: var(--wc-accent);
+}
+
+.work-catalogue .wc-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.work-catalogue .wc-project {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--wc-green);
+  background: rgb(52 211 153 / 10%);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgb(52 211 153 / 25%);
+}
+
+.work-catalogue .wc-issue-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  background: var(--wc-accent-bg);
+  color: var(--wc-accent);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--wc-accent-border);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.work-catalogue .wc-issue-badge:hover {
+  background: var(--wc-accent-border);
+}
+
+.work-catalogue .wc-date {
+  font-size: 11px;
+  color: var(--wc-muted);
+  margin-left: auto;
+}
+
+.work-catalogue .wc-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--wc-text);
+  text-decoration: none;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+
+.work-catalogue .wc-title:hover {
+  color: var(--wc-accent);
+}
+
+.work-catalogue .wc-desc {
+  font-size: 12px;
+  color: var(--wc-muted);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.work-catalogue .wc-links {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.work-catalogue .wc-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--wc-muted);
+  text-decoration: none;
+  padding: 3px 8px;
+  border: 1px solid var(--wc-border);
+  border-radius: 4px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.work-catalogue .wc-link:hover {
+  color: var(--wc-text);
+  border-color: var(--wc-muted);
+}
+
+.work-catalogue .wc-flows {
+  color: var(--wc-accent);
+  border-color: var(--wc-accent-border);
+}
+
+.work-catalogue .wc-flows:hover {
+  background: var(--wc-accent-bg);
+  color: var(--wc-accent);
+  border-color: var(--wc-accent);
+}
