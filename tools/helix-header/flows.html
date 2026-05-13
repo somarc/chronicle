@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>helix-header · PR #289 · Flow Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:#0d1117;color:#e6edf3;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+#site-nav{
+  height:42px;min-height:42px;
+  background:#161b22;
+  border-bottom:1px solid #30363d;
+  display:flex;align-items:center;
+  padding:0 20px;gap:0;flex-shrink:0;z-index:10;
+}
+#site-nav a{
+  font-size:12px;font-weight:500;color:#8b949e;text-decoration:none;
+  display:flex;align-items:center;gap:6px;
+  padding:4px 8px;border-radius:5px;
+  transition:color .15s,background .15s;
+}
+#site-nav a:hover{color:#c9d1d9;background:#21262d}
+#site-nav a svg{flex-shrink:0}
+#site-nav .sep{width:1px;height:16px;background:#30363d;margin:0 10px}
+#site-nav .page-title{font-size:13px;font-weight:600;color:#e6edf3}
+#site-nav .badge{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;color:#484f58;
+}
+#cn-browse-anchor{margin-left:auto;display:flex;align-items:center;}
+#site-nav .issue-badge{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  background:#1c2840;color:#58a6ff;
+  padding:2px 7px;border-radius:4px;border:1px solid #1f4e79;
+  text-decoration:none;
+}
+#site-nav .issue-badge:hover{background:#1f4e79;color:#a5c8ff}
+
+#workspace{flex:1;display:flex;overflow:hidden;min-height:0}
+
+#sidebar{width:264px;min-width:264px;background:#161b22;border-right:1px solid #30363d;overflow-y:auto;display:flex;flex-direction:column}
+#sidebar::-webkit-scrollbar{width:6px}
+#sidebar::-webkit-scrollbar-track{background:transparent}
+#sidebar::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+#sidebar::-webkit-scrollbar-thumb:hover{background:#484f58}
+#sidebar{scrollbar-width:thin;scrollbar-color:#30363d transparent}
+#sidebar-hd{padding:14px 16px;border-bottom:1px solid #30363d}
+#sidebar-hd h2{font-size:13px;font-weight:700;color:#58a6ff;letter-spacing:.01em}
+#sidebar-hd p{font-size:11px;color:#8b949e;margin-top:3px}
+.grp{border-bottom:1px solid #21262d}
+.grp-hd{padding:7px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8b949e;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.grp-hd:hover{background:#1c2128;color:#c9d1d9}
+.grp-arrow{transition:transform .15s}
+.grp.closed .grp-arrow{transform:rotate(-90deg)}
+.grp.closed .grp-body{display:none}
+.grp-body{padding:3px 0}
+.cmd{padding:5px 14px 5px 26px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;color:#c9d1d9;border-left:3px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.cmd:hover{background:#1c2128;color:#fff}
+.cmd.on{background:#1c2840;color:#58a6ff;border-left-color:#58a6ff}
+.cmd-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#toolbar{padding:8px 16px;background:#161b22;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:16px;min-height:42px;flex-shrink:0}
+#active-label{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#7ee787;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#active-label .dim{color:#8b949e}
+#legend{display:flex;gap:14px;font-size:11px;color:#8b949e;flex-shrink:0}
+.leg{display:flex;align-items:center;gap:5px}
+.leg-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+#diagram-wrap{flex:1;overflow:hidden;position:relative}
+svg#dg{display:block;width:100%;height:100%}
+
+.nd rect{rx:6;ry:6;transition:fill .2s,stroke .2s,stroke-width .15s}
+.nd text{pointer-events:none;transition:fill .2s}
+.nd .lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600}
+.nd .sub{font-size:9.5px}
+
+.nd-ext rect{fill:#0f1e17;stroke:#059669;stroke-width:1}
+.nd-ext .lbl{fill:#34d399}
+.nd-ext .sub{fill:#4a5568}
+.nd-core rect{fill:#13161e;stroke:#3b5bdb;stroke-width:1.5}
+.nd-core .lbl{fill:#748ffc}
+.nd-core .sub{fill:#4a5568}
+.nd-lib rect{fill:#13161e;stroke:#6e40c9;stroke-width:1}
+.nd-lib .lbl{fill:#a78bfa}
+.nd-lib .sub{fill:#4a5568}
+.nd-client rect{fill:#13161e;stroke:#0891b2;stroke-width:1.5}
+.nd-client .lbl{fill:#22d3ee}
+.nd-client .sub{fill:#4a5568}
+.nd-file rect{fill:#1e1a0f;stroke:#b45309;stroke-width:1}
+.nd-file .lbl{fill:#fbbf24}
+.nd-file .sub{fill:#4a5568}
+.nd-new-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;fill:#7ee787}
+
+.nd.hi rect{stroke-width:2.5;filter:drop-shadow(0 0 7px var(--glow))}
+.nd-ext.hi rect{--glow:#34d399;fill:#0e2820;stroke:#34d399}
+.nd-ext.hi .lbl{fill:#a7f3d0}
+.nd-core.hi rect{--glow:#748ffc;fill:#1a2050;stroke:#748ffc}
+.nd-core.hi .lbl{fill:#c7d2fe}
+.nd-lib.hi rect{--glow:#a78bfa;fill:#1e1535;stroke:#a78bfa}
+.nd-lib.hi .lbl{fill:#ddd6fe}
+.nd-client.hi rect{--glow:#22d3ee;fill:#0f2733;stroke:#22d3ee}
+.nd-client.hi .lbl{fill:#a5f3fc}
+.nd-file.hi rect{--glow:#fbbf24;fill:#2a1e00;stroke:#fbbf24}
+.nd-file.hi .lbl{fill:#fde68a}
+
+.nd.dim rect{opacity:.3}
+.nd.dim text{opacity:.25}
+
+.edge{fill:none;stroke:#21262d;stroke-width:1.5;transition:stroke .25s,stroke-width .25s,opacity .25s}
+.edge.hi{stroke-width:2.5}
+.edge.hi-ext{stroke:#34d399}
+.edge.hi-core{stroke:#748ffc}
+.edge.hi-lib{stroke:#a78bfa}
+.edge.hi-client{stroke:#22d3ee}
+.edge.hi-file{stroke:#fbbf24}
+.edge.dim{opacity:.15}
+.edgelbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;fill:#484f58;pointer-events:none;transition:fill .25s,opacity .25s}
+.edgelbl.hi{fill:#94a3b8;opacity:1}
+.edgelbl.dim{opacity:.1}
+
+#ann{flex-shrink:0;height:230px;min-height:230px;background:#161b22;border-top:1px solid #30363d;overflow-y:auto;padding:10px 14px}
+#ann::-webkit-scrollbar{width:6px}
+#ann::-webkit-scrollbar-track{background:transparent}
+#ann::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+#ann::-webkit-scrollbar-thumb:hover{background:#484f58}
+#ann{scrollbar-width:thin;scrollbar-color:#30363d transparent}
+#ann-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8b949e;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+#ann-title .result-badge{font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;padding:2px 8px;border-radius:4px;text-transform:none;letter-spacing:0}
+.result-badge.positive{background:#0e2820;color:#34d399;border:1px solid #059669}
+.result-badge.negative{background:#2d1515;color:#f87171;border:1px solid #991b1b}
+.step{display:flex;gap:9px;padding:5px 7px;border-radius:5px;cursor:pointer;transition:background .1s}
+.step:hover{background:#1c2128}
+.step.on{background:#1c2840}
+.step-n{min-width:20px;height:20px;border-radius:50%;background:#21262d;font-size:10px;font-weight:700;color:#8b949e;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:background .1s,color .1s}
+.step.on .step-n{background:#1f4e79;color:#58a6ff}
+.step-body{flex:1;min-width:0}
+.step-pkgs{font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:#58a6ff;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step-txt{font-size:11.5px;color:#c9d1d9;line-height:1.5}
+.step-txt .before{color:#f87171;font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#2d1515;padding:1px 5px;border-radius:3px}
+.step-txt .after{color:#34d399;font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#0e2820;padding:1px 5px;border-radius:3px}
+.step-txt code{font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#21262d;padding:1px 5px;border-radius:3px;color:#e6edf3}
+#empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:6px;color:#484f58}
+#empty .tip{font-size:11px}
+</style>
+</head>
+<body>
+
+<nav id="site-nav">
+  <a href="/">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    chronicle
+  </a>
+  <div class="sep"></div>
+  <a href="https://github.com/adobe/helix-tools-website/pull/289">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    PR #289
+  </a>
+  <div class="sep"></div>
+  <span class="page-title">Flow Explorer</span>
+  <span class="badge">&nbsp;·&nbsp;helix-header · PR #289 · experimental lab metadata</span>
+  <div id="cn-browse-anchor" style="margin-left:auto;display:flex;align-items:center;"></div>
+</nav>
+<script type="module">
+  import { decorateBrowse } from '/scripts/chronicle-nav.js';
+  decorateBrowse(document.getElementById('cn-browse-anchor'));
+</script>
+
+<div id="workspace">
+
+<div id="sidebar">
+  <div id="sidebar-hd">
+    <h2>Header Lab Scenarios</h2>
+    <p>Click a scenario to trace the flow</p>
+  </div>
+  <div id="cmd-tree"></div>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <div id="active-label"><span class="dim">← select a scenario</span></div>
+    <div id="legend">
+      <div class="leg"><div class="leg-dot" style="background:#34d399"></div>external</div>
+      <div class="leg"><div class="leg-dot" style="background:#748ffc"></div>core</div>
+      <div class="leg"><div class="leg-dot" style="background:#a78bfa"></div>lib (browser)</div>
+      <div class="leg"><div class="leg-dot" style="background:#22d3ee"></div>client UI</div>
+    </div>
+  </div>
+  <div id="diagram-wrap">
+    <svg id="dg" viewBox="0 0 900 320" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <marker id="arr"        markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#30363d"/></marker>
+        <marker id="arr-ext"    markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#34d399"/></marker>
+        <marker id="arr-core"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#748ffc"/></marker>
+        <marker id="arr-lib"    markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#a78bfa"/></marker>
+        <marker id="arr-client" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#22d3ee"/></marker>
+        <marker id="arr-file"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#fbbf24"/></marker>
+      </defs>
+      <g id="edges-layer"></g>
+      <g id="nodes-layer"></g>
+    </svg>
+  </div>
+  <div id="ann">
+    <div id="empty">
+      <svg width="32" height="32" fill="none" stroke="#484f58" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <div class="tip">Select a scenario from the sidebar to trace the header lab flow</div>
+    </div>
+    <div id="steps" style="display:none"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const DATA = {
+
+  nodes: [
+    {
+      id:"tool-page", x:16, y:48, w:160, h:52, type:"ext",
+      label:"tool-page",
+      sub:"/tools/*/index.html · <meta lab>"
+    },
+    {
+      id:"observe", x:200, y:48, w:195, h:52, type:"core",
+      label:"observeLabToolLinks()",
+      sub:"IntersectionObserver · 200px rootMargin"
+    },
+    {
+      id:"islab", x:420, y:48, w:175, h:52, type:"core",
+      label:"isLabTool()",
+      sub:"fetch · DOMParser · meta check"
+    },
+    {
+      id:"decorate-link", x:618, y:48, w:185, h:52, type:"core",
+      label:"decorateLabToolLink()",
+      sub:"appends <span.experimental-icon> 🧪"
+    },
+    {
+      id:"header-dropdown", x:720, y:188, w:162, h:52, type:"client",
+      label:"header-dropdown",
+      sub:"nav links ± 🧪 icon"
+    },
+    {
+      id:"intersect", x:200, y:188, w:195, h:52, type:"lib",
+      label:"IntersectionObserver",
+      sub:"browser API · viewport trigger"
+    },
+    {
+      id:"decorate-ribbon", x:420, y:188, w:182, h:52, type:"core",
+      label:"decorateExperimentalRibbon()",
+      sub:"ribbon + .experimental-tooltip DOM"
+    },
+    {
+      id:"attach-tooltip", x:420, y:268, w:182, h:44, type:"core",
+      label:"attachTooltip()",
+      sub:"hover/focus · 100ms debounce"
+    },
+    {
+      id:"exp-ribbon", x:44, y:188, w:140, h:52, type:"client",
+      label:"experimental-ribbon",
+      sub:"\"Experimental\" banner"
+    },
+    {
+      id:"exp-tooltip", x:44, y:268, w:140, h:44, type:"client",
+      label:"experimental-tooltip",
+      sub:"tooltip + lifecycle link"
+    },
+  ],
+
+  edges: [
+    {
+      id:"e-obs-intersect", from:"observe", to:"intersect", color:"lib",
+      label:"registers"
+    },
+    {
+      id:"e-intersect-islab", from:"intersect", to:"islab", color:"core",
+      label:"link enters viewport"
+    },
+    {
+      id:"e-islab-page", from:"islab", to:"tool-page", color:"ext",
+      label:"fetch + parse"
+    },
+    {
+      id:"e-islab-declink", from:"islab", to:"decorate-link", color:"core",
+      label:"lab=true"
+    },
+    {
+      id:"e-declink-dropdown", from:"decorate-link", to:"header-dropdown", color:"client",
+      label:"append 🧪 span"
+    },
+    {
+      id:"e-ribbon-attach", from:"decorate-ribbon", to:"attach-tooltip", color:"core",
+      label:"wires events"
+    },
+    {
+      id:"e-attach-expribbon", from:"attach-tooltip", to:"exp-ribbon", color:"client",
+      label:"show/hide"
+    },
+    {
+      id:"e-attach-exptip", from:"attach-tooltip", to:"exp-tooltip", color:"client",
+      label:"show/hide"
+    },
+    {
+      id:"e-decribbon-expribbon", from:"decorate-ribbon", to:"exp-ribbon", color:"core",
+      label:"creates"
+    },
+    {
+      id:"e-decribbon-exptip", from:"decorate-ribbon", to:"exp-tooltip", color:"core",
+      label:"creates"
+    },
+  ],
+
+  commands: [
+
+    { group:"Header Lab Icon", items:[
+
+      { id:"nonlab-tool",
+        label:"Non-lab tool in header",
+        resultLabel:"no icon added", resultPositive:true,
+        desc:"observeLabToolLinks triggers on a tool page lacking lab metadata — no icon appended",
+        steps:[
+          { nodes:["observe","intersect"], edges:["e-obs-intersect"],
+            pkgs:"observeLabToolLinks() → IntersectionObserver",
+            txt:"<code>observeLabToolLinks(container)</code> iterates nav links and registers each with a new <code>IntersectionObserver</code> (<code>rootMargin: '200px'</code>). The observer fires when the link scrolls within 200px of the viewport — lazy evaluation avoids fetching all tool pages on load." },
+          { nodes:["intersect","islab"], edges:["e-intersect-islab"],
+            pkgs:"IntersectionObserver → isLabTool(url)",
+            txt:"The observer's callback fires when the link enters the extended viewport. It calls <code>isLabTool(link.href)</code> and immediately <code>unobserves</code> the entry so the fetch only happens once per link." },
+          { nodes:["islab","tool-page"], edges:["e-islab-page"],
+            pkgs:"isLabTool() → fetch → DOMParser",
+            txt:"<code>isLabTool(url)</code> fetches the tool page HTML, parses it with <code>new DOMParser()</code>, and queries <code>document.querySelector('meta[name=\"lab\"]')</code>. This page does <em>not</em> have a <code>&lt;meta name=\"lab\" content=\"true\"&gt;</code> tag." },
+          { nodes:["islab"], edges:[],
+            pkgs:"isLabTool() → returns false → no decoration",
+            txt:"<code>meta.content !== 'true'</code> → <code>isLabTool</code> returns <code>false</code>. <code>decorateLabToolLink</code> is not called. The nav link remains unchanged — no 🧪 icon, no class modification. <span class='after'>After PR #289: only pages that explicitly opt in via metadata get the icon</span>" },
+        ]
+      },
+
+      { id:"lab-tool",
+        label:"Lab tool in header",
+        resultLabel:"🧪 icon added", resultPositive:true,
+        desc:"Tool page carries lab=true meta — observeLabToolLinks drives icon decoration via isLabTool",
+        steps:[
+          { nodes:["observe","intersect"], edges:["e-obs-intersect"],
+            pkgs:"observeLabToolLinks() → IntersectionObserver",
+            txt:"Same lazy registration as the non-lab path. <code>observeLabToolLinks(container)</code> sets up one <code>IntersectionObserver</code> per nav link with <code>rootMargin: '200px'</code>, deferring the fetch until the link is near the viewport." },
+          { nodes:["intersect","islab"], edges:["e-intersect-islab"],
+            pkgs:"IntersectionObserver → isLabTool(url)",
+            txt:"Link enters the extended viewport. Observer callback invokes <code>isLabTool(link.href)</code> and unobserves. <span class='before'>Before PR #289: nav content had authored 🧪 markers in DA — manual, prone to drift if page metadata changed</span>" },
+          { nodes:["islab","tool-page"], edges:["e-islab-page"],
+            pkgs:"isLabTool() → fetch → DOMParser · meta[name=lab]",
+            txt:"<code>isLabTool</code> fetches the tool page and parses the HTML. <code>document.querySelector('meta[name=\"lab\"]')?.content === 'true'</code> → the page carries the lab opt-in. Returns <code>true</code>." },
+          { nodes:["islab","decorate-link","header-dropdown"], edges:["e-islab-declink","e-declink-dropdown"],
+            pkgs:"isLabTool() → decorateLabToolLink() → header-dropdown",
+            txt:"<code>decorateLabToolLink(link)</code> creates <code>&lt;span class=\"experimental-icon\"&gt;🧪&lt;/span&gt;</code> and appends it to the anchor. The <code>header-dropdown</code> nav link now displays the icon inline. <span class='after'>After: icon derived from page metadata — single source of truth, no manual authoring</span>" },
+        ]
+      },
+
+    ]},
+
+    { group:"Experimental Ribbon", items:[
+
+      { id:"ribbon-tooltip",
+        label:"Ribbon + tooltip wiring",
+        resultLabel:"tooltip active", resultPositive:true,
+        desc:"Lab page triggers decorateExperimentalRibbon — ribbon and rich tooltip built and wired",
+        steps:[
+          { nodes:["decorate-ribbon","exp-ribbon","exp-tooltip"], edges:["e-decribbon-expribbon","e-decribbon-exptip"],
+            pkgs:"decorateExperimentalRibbon() → ribbon + tooltip DOM",
+            txt:"<code>decorateExperimentalRibbon(block)</code> runs on a page where <code>lab=true</code>. It creates the ribbon element (<code>div.experimental-ribbon</code>) and a separate tooltip element (<code>div.experimental-tooltip</code>) containing the copy and a lifecycle link. <span class='before'>Before PR #289: ribbon was a plain div with textContent only — no tooltip, no cursor, no focus ring</span>" },
+          { nodes:["decorate-ribbon","attach-tooltip"], edges:["e-ribbon-attach"],
+            pkgs:"decorateExperimentalRibbon() → attachTooltip(ribbon, tooltip)",
+            txt:"<code>attachTooltip(ribbon, tooltip)</code> is called with both elements. It sets <code>ribbon.style.cursor = 'help'</code>, adds a focus ring, and attaches event listeners for <code>mouseenter</code>, <code>mouseleave</code>, <code>focus</code>, and <code>blur</code>." },
+          { nodes:["attach-tooltip","exp-ribbon","exp-tooltip"], edges:["e-attach-expribbon","e-attach-exptip"],
+            pkgs:"attachTooltip() → hover/focus show/hide · 100ms debounce",
+            txt:"<code>mouseenter</code> / <code>focus</code> immediately show the tooltip. <code>mouseleave</code> / <code>blur</code> start a 100ms debounce timer before hiding — prevents flicker when the cursor briefly crosses the ribbon edge. Moving back onto the ribbon cancels the hide timer." },
+          { nodes:["exp-ribbon","exp-tooltip"], edges:[],
+            pkgs:"experimental-ribbon + experimental-tooltip · rendered state",
+            txt:"<span class='after'>After PR #289: ribbon has <code>cursor:help</code>, focus ring via <code>tabIndex=0</code>, and a rich tooltip with descriptive copy + a link to the lifecycle doc.</span> Keyboard users can Tab to the ribbon and read the tooltip. Before, the ribbon was non-interactive." },
+        ]
+      },
+
+    ]},
+
+    { group:"Before vs After", items:[
+
+      { id:"before-after",
+        label:"Authored emoji vs metadata-driven",
+        resultLabel:"metadata wins", resultPositive:true,
+        desc:"Compares the old manual-authoring approach to the new metadata-derived icon system",
+        steps:[
+          { nodes:["tool-page"], edges:[],
+            pkgs:"Source of truth: tool page <meta name=\"lab\">",
+            txt:"<span class='before'>Before: DA nav content contained authored 🧪 emoji characters directly in the link text. Authors had to remember to add/remove them manually when a tool graduated from lab status.</span> Any mismatch between nav and actual tool status was silent and required a DA content edit to fix." },
+          { nodes:["observe","intersect","islab"], edges:["e-obs-intersect","e-intersect-islab","e-islab-page"],
+            pkgs:"observeLabToolLinks() → isLabTool() — single source of truth",
+            txt:"<span class='after'>After: the header reads <code>&lt;meta name=\"lab\" content=\"true\"&gt;</code> directly from each tool page. The nav never needs to be re-authored to reflect lab status changes — updating the tool page's meta tag is sufficient.</span> The lazy IntersectionObserver means this metadata check adds zero extra requests on initial page load." },
+          { nodes:["decorate-link","header-dropdown"], edges:["e-islab-declink","e-declink-dropdown"],
+            pkgs:"decorateLabToolLink() → header-dropdown — derived icon",
+            txt:"The 🧪 icon in the dropdown is now a runtime-injected <code>&lt;span class=\"experimental-icon\"&gt;</code>, not authored text. This means it can be styled independently (size, color, animation) via CSS without touching content. The source of truth is the tool page's metadata, making the header and the tool catalog consistent automatically." },
+        ]
+      },
+
+    ]},
+
+  ],
+};
+
+// ── bootstrap ─────────────────────────────────────────────────
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const nodeMap = {};
+DATA.nodes.forEach(n => { nodeMap[n.id] = n; });
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+function cx(n) { return n.x + n.w / 2; }
+
+function edgePath(e, src, dst) {
+  const x1 = cx(src) + (e.srcDx || 0), x2 = cx(dst) + (e.dstDx || 0);
+  const srcBot = src.y + src.h, dstBot = dst.y + dst.h;
+  // same vertical layer → horizontal arc
+  if (Math.abs(src.y - dst.y) < 8) {
+    const my = src.y + src.h / 2;
+    if (src.x < dst.x) {
+      return `M${src.x + src.w},${my} C${src.x + src.w + 22},${my} ${dst.x - 22},${my} ${dst.x},${my}`;
+    }
+    const ay = src.y - 32;
+    return `M${src.x},${my} C${src.x - 34},${ay} ${dst.x + dst.w + 34},${ay} ${dst.x + dst.w},${my}`;
+  }
+  // upward edge: exit top of src, enter bottom of dst
+  if (src.y >= dst.y) {
+    const cp = Math.min(Math.abs(src.y - dstBot) * 0.55, 75);
+    return `M${x1},${src.y} C${x1},${src.y - cp} ${x2},${dstBot + cp} ${x2},${dstBot}`;
+  }
+  // normal downward
+  const cp = Math.min(Math.max((dst.y - srcBot) * 0.55, 20), 70);
+  return `M${x1},${srcBot} C${x1},${srcBot + cp} ${x2},${dst.y - cp} ${x2},${dst.y}`;
+}
+
+// ── sidebar ────────────────────────────────────────────────────
+const ICON_COLOR   = '#34d399';
+const RIBBON_COLOR = '#748ffc';
+const BEFORE_COLOR = '#a78bfa';
+const GROUP_COLORS = [ICON_COLOR, RIBBON_COLOR, BEFORE_COLOR];
+
+const tree = document.getElementById('cmd-tree');
+DATA.commands.forEach((g, gi) => {
+  const dotColor = GROUP_COLORS[gi] || '#8b949e';
+  const div = document.createElement('div');
+  div.className = 'grp';
+  div.innerHTML = `<div class="grp-hd">${g.group}<span class="grp-arrow">▾</span></div><div class="grp-body"></div>`;
+  const body = div.querySelector('.grp-body');
+  g.items.forEach(cmd => {
+    const el = document.createElement('div');
+    el.className = 'cmd';
+    el.dataset.id = cmd.id;
+    el.innerHTML = `<span class="cmd-dot" style="background:${dotColor}"></span>${cmd.label}`;
+    el.addEventListener('click', () => selectCmd(cmd.id));
+    body.appendChild(el);
+  });
+  div.querySelector('.grp-hd').addEventListener('click', () => div.classList.toggle('closed'));
+  tree.appendChild(div);
+});
+
+// ── nodes ──────────────────────────────────────────────────────
+const nodesLayer = document.getElementById('nodes-layer');
+DATA.nodes.forEach(n => {
+  const g = svgEl('g', { class: `nd nd-${n.type}`, id: `nd-${n.id}` });
+  const rect = svgEl('rect', { x: n.x, y: n.y, width: n.w, height: n.h, rx: 7, ry: 7 });
+  g.appendChild(rect);
+  if (n.label) {
+    const lbl = svgEl('text', { x: cx(n), y: n.y + (n.sub ? 17 : 27), 'text-anchor': 'middle', class: 'lbl' });
+    lbl.textContent = n.label;
+    g.appendChild(lbl);
+  }
+  if (n.sub) {
+    const sub = svgEl('text', { x: cx(n), y: n.y + 32, 'text-anchor': 'middle', class: 'sub' });
+    sub.textContent = n.sub.length > 46 ? n.sub.slice(0, 44) + '…' : n.sub;
+    g.appendChild(sub);
+  }
+  nodesLayer.appendChild(g);
+});
+
+// ── edges ──────────────────────────────────────────────────────
+const edgesLayer = document.getElementById('edges-layer');
+DATA.edges.forEach(e => {
+  const src = nodeMap[e.from], dst = nodeMap[e.to];
+  if (!src || !dst) return;
+  const g = svgEl('g', { id: `ed-${e.id}` });
+  const path = svgEl('path', { d: edgePath(e, src, dst), class: 'edge', 'marker-end': 'url(#arr)' });
+  const lx = (cx(src) + (e.srcDx || 0) + cx(dst) + (e.dstDx || 0)) / 2 + 4;
+  const my = (src.y + src.h + dst.y) / 2;
+  const lbl = svgEl('text', { x: lx, y: my, class: 'edgelbl' });
+  lbl.textContent = e.label;
+  g.appendChild(path);
+  g.appendChild(lbl);
+  edgesLayer.appendChild(g);
+});
+
+// ── selection ──────────────────────────────────────────────────
+let activeStepIdx = -1, currentCmd = null;
+
+function allCmds() { return DATA.commands.flatMap(g => g.items); }
+
+function selectCmd(id) {
+  const cmd = allCmds().find(c => c.id === id);
+  if (!cmd) return;
+  currentCmd = cmd;
+  activeStepIdx = -1;
+  document.querySelectorAll('.cmd').forEach(el => el.classList.toggle('on', el.dataset.id === id));
+  document.getElementById('active-label').innerHTML =
+    `<span class="dim">scenario: </span>${cmd.label} <span class="dim">— ${cmd.desc}</span>`;
+  resetDiagram();
+  const allN = new Set(), allE = new Set();
+  cmd.steps.forEach(s => { s.nodes.forEach(n => allN.add(n)); s.edges.forEach(e => allE.add(e)); });
+  allN.forEach(nid => setNodeState(nid, 'hi'));
+  allE.forEach(eid => setEdgeState(eid, true));
+  DATA.nodes.forEach(n => { if (!allN.has(n.id)) setNodeState(n.id, 'dim'); });
+  DATA.edges.forEach(e => { if (!allE.has(e.id)) setEdgeStateDim(e.id); });
+  renderSteps(cmd);
+}
+
+function resetDiagram() {
+  DATA.nodes.forEach(n => {
+    const g = document.getElementById(`nd-${n.id}`);
+    if (g) { g.classList.remove('hi', 'dim'); }
+  });
+  DATA.edges.forEach(e => {
+    const g = document.getElementById(`ed-${e.id}`);
+    if (!g) return;
+    g.querySelector('path').className.baseVal = 'edge';
+    g.querySelector('path').setAttribute('marker-end', 'url(#arr)');
+    const lbl = g.querySelector('text');
+    if (lbl) lbl.className.baseVal = 'edgelbl';
+  });
+}
+
+function setNodeState(nid, state) {
+  const g = document.getElementById(`nd-${nid}`);
+  if (!g) return;
+  g.classList.remove('hi', 'dim');
+  if (state) g.classList.add(state);
+}
+
+function setEdgeState(eid, active) {
+  const ed = DATA.edges.find(e => e.id === eid);
+  const g = document.getElementById(`ed-${eid}`);
+  if (!g || !ed) return;
+  if (active) {
+    g.querySelector('path').className.baseVal = `edge hi hi-${ed.color}`;
+    g.querySelector('path').setAttribute('marker-end', `url(#arr-${ed.color})`);
+    const lbl = g.querySelector('text');
+    if (lbl) lbl.className.baseVal = 'edgelbl hi';
+  }
+}
+
+function setEdgeStateDim(eid) {
+  const g = document.getElementById(`ed-${eid}`);
+  if (!g) return;
+  g.querySelector('path').className.baseVal = 'edge dim';
+  const lbl = g.querySelector('text');
+  if (lbl) lbl.className.baseVal = 'edgelbl dim';
+}
+
+function renderSteps(cmd) {
+  document.getElementById('empty').style.display = 'none';
+  const stepsEl = document.getElementById('steps');
+  stepsEl.style.display = 'block';
+  stepsEl.innerHTML = '';
+  const title = document.createElement('div');
+  title.id = 'ann-title';
+  const badge = cmd.resultLabel
+    ? `<span class="result-badge ${cmd.resultPositive ? 'positive' : 'negative'}">${cmd.resultLabel}</span>`
+    : '';
+  title.innerHTML = `<span>${cmd.label}</span>${badge}`;
+  stepsEl.appendChild(title);
+  cmd.steps.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'step';
+    row.dataset.idx = i;
+    row.innerHTML = `<div class="step-n">${i + 1}</div><div class="step-body"><div class="step-pkgs">${s.pkgs}</div><div class="step-txt">${s.txt}</div></div>`;
+    row.addEventListener('mouseenter', () => { if (activeStepIdx < 0) highlightStep(cmd, i); });
+    row.addEventListener('mouseleave', () => { if (activeStepIdx < 0) highlightAll(cmd); });
+    row.addEventListener('click', () => {
+      activeStepIdx = activeStepIdx === i ? -1 : i;
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('on'));
+      if (activeStepIdx >= 0) {
+        document.querySelectorAll('.step')[activeStepIdx]?.classList.add('on');
+        highlightStep(cmd, activeStepIdx);
+      } else {
+        highlightAll(cmd);
+      }
+    });
+    stepsEl.appendChild(row);
+  });
+}
+
+function highlightAll(cmd) {
+  resetDiagram();
+  const allN = new Set(), allE = new Set();
+  cmd.steps.forEach(s => { s.nodes.forEach(n => allN.add(n)); s.edges.forEach(e => allE.add(e)); });
+  allN.forEach(nid => setNodeState(nid, 'hi'));
+  allE.forEach(eid => setEdgeState(eid, true));
+  DATA.nodes.forEach(n => { if (!allN.has(n.id)) setNodeState(n.id, 'dim'); });
+  DATA.edges.forEach(e => { if (!allE.has(e.id)) setEdgeStateDim(e.id); });
+}
+
+function highlightStep(cmd, idx) {
+  const step = cmd.steps[idx];
+  if (!step) return;
+  const allN = new Set(cmd.steps.flatMap(s => s.nodes));
+  const allE = new Set(cmd.steps.flatMap(s => s.edges));
+  resetDiagram();
+  DATA.nodes.forEach(n => { if (!allN.has(n.id)) setNodeState(n.id, 'dim'); });
+  DATA.edges.forEach(e => { if (!allE.has(e.id)) setEdgeStateDim(e.id); });
+  allN.forEach(nid => { if (!step.nodes.includes(nid)) setNodeState(nid, 'dim'); });
+  allE.forEach(eid => { if (!step.edges.includes(eid)) setEdgeStateDim(eid); });
+  step.nodes.forEach(nid => setNodeState(nid, 'hi'));
+  step.edges.forEach(eid => setEdgeState(eid, true));
+}
+
+// open first group by default
+document.querySelectorAll('.grp')[0]?.classList.remove('closed');
+</script>
+</body>
+</html>
