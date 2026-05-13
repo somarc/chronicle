@@ -1,6 +1,7 @@
 const INDEX_URL = '/query-index.json';
 const ISSUES_PREFIX = '/issues/';
 const VIEWS = ['timeline', 'project', 'issue'];
+const HASH_KEY = 'view';
 
 function fmt(dateStr) {
   if (!dateStr) return '';
@@ -9,13 +10,26 @@ function fmt(dateStr) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function groupBy(items, key) {
+function groupBy(items, keyFn) {
+  const fn = typeof keyFn === 'function' ? keyFn : (item) => item[keyFn] || 'Other';
   return items.reduce((acc, item) => {
-    const k = item[key] || 'Other';
+    const k = fn(item) || 'Other';
     if (!acc[k]) acc[k] = [];
     acc[k].push(item);
     return acc;
   }, {});
+}
+
+function getHashView() {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const v = params.get(HASH_KEY);
+  return VIEWS.includes(v) ? v : null;
+}
+
+function setHashView(view) {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  params.set(HASH_KEY, view);
+  window.history.replaceState(null, '', `#${params.toString()}`);
 }
 
 function entryCard(entry) {
@@ -108,7 +122,7 @@ function render(container, entries, view) {
 }
 
 export default async function decorate(block) {
-  let activeView = 'timeline';
+  let activeView = getHashView() || 'timeline';
 
   const toolbar = document.createElement('div');
   toolbar.className = 'wc-toolbar';
@@ -151,7 +165,22 @@ export default async function decorate(block) {
       b.classList.toggle('wc-tab-active', b === btn);
       b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
     });
+    setHashView(activeView);
     render(content, entries, activeView);
+  });
+
+  // Sync if another part of the page changes the hash
+  window.addEventListener('hashchange', () => {
+    const v = getHashView();
+    if (v && v !== activeView) {
+      activeView = v;
+      toggle.querySelectorAll('.wc-tab').forEach((b) => {
+        const match = b.dataset.view === activeView;
+        b.classList.toggle('wc-tab-active', match);
+        b.setAttribute('aria-selected', match ? 'true' : 'false');
+      });
+      render(content, entries, activeView);
+    }
   });
 
   try {
