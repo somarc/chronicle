@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log — Chronicle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── tokens ── */
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2128;
+  --border:   #30363d;
+  --border2:  #21262d;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --dim:      #484f58;
+  --accent:   #58a6ff;
+  --green:    #34d399;
+  --green-dim:#1a4a36;
+  --purple:   #bc8cff;
+  --yellow:   #e3b341;
+  --red:      #f85149;
+  --orange:   #f0883e;
+  --font:     'IBM Plex Sans', system-ui, sans-serif;
+  --mono:     'IBM Plex Mono', 'Fira Code', monospace;
+}
+
+/* ── base ── */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── scrollbars ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+/* ── layout ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#site-nav {
+  height: 42px;
+  min-height: 42px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 0;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+#page-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px 0;
+  flex-shrink: 0;
+}
+
+.page-hd-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.page-hd-row h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.01em;
+}
+
+.page-hd-row .sub {
+  font-size: 13px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.page-hd-row .user-pill {
+  font-size: 11px;
+  font-family: var(--mono);
+  background: #1c2840;
+  color: var(--accent);
+  border: 1px solid #1f4e79;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+/* ── tabs ── */
+#tabs {
+  display: flex;
+  gap: 0;
+  align-items: flex-end;
+}
+
+.tab-btn {
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+  font-family: var(--font);
+}
+
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.tab-btn .tab-count {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--dim);
+  margin-left: 5px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 1px 5px;
+}
+
+/* ── view container ── */
+#view-area {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+.view {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.view.active { display: block; }
+
+/* ── loading overlay ── */
+#loading {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+#loading.hidden { display: none; }
+
+.load-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.load-sub {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.progress-bar-wrap {
+  width: 280px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width .3s ease;
+  width: 0%;
+}
+
+.load-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 280px;
+}
+
+.load-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dim);
+  flex-shrink: 0;
+  transition: background .3s;
+}
+
+.step-dot.done { background: var(--green); }
+.step-dot.active { background: var(--accent); animation: pulse 1s ease infinite; }
+.step-dot.error { background: var(--red); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
+/* ── error state ── */
+#error-state {
+  display: none;
+  padding: 40px 24px;
+  text-align: center;
+}
+#error-state.visible { display: block; }
+
+.error-box {
+  display: inline-block;
+  background: #2a1215;
+  border: 1px solid #6e2a2a;
+  border-radius: 8px;
+  padding: 20px 28px;
+  max-width: 480px;
+  text-align: left;
+}
+.error-box h3 { color: var(--red); font-size: 14px; margin-bottom: 8px; }
+.error-box p { color: var(--muted); font-size: 13px; line-height: 1.6; }
+.retry-btn {
+  margin-top: 14px;
+  padding: 7px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background .15s;
+}
+.retry-btn:hover { background: var(--border); }
+
+/* ── chronicle badge ── */
+.chron-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid #235c40;
+  border-radius: 4px;
+  padding: 1px 6px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s;
+}
+.chron-badge:hover { background: #1f5236; }
+.chron-badge::before { content: '◆'; font-size: 8px; }
+
+/* ── repo colour dots ── */
+.repo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+/* ═══════════════════════════════════════════
+   VIEW 1: TIMELINE
+═══════════════════════════════════════════ */
+.day-group { margin-bottom: 24px; }
+
+.day-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.day-count {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--dim);
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 1px 6px;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  transition: background .1s;
+  cursor: default;
+}
+
+.event-row:hover { background: var(--surface2); }
+
+.ev-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.ev-icon svg { width: 14px; height: 14px; }
+.ev-icon.push { color: var(--purple); }
+.ev-icon.pr { color: var(--green); }
+.ev-icon.create { color: var(--accent); }
+.ev-icon.delete { color: var(--red); }
+.ev-icon.review { color: var(--yellow); }
+
+.ev-repo {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.ev-repo .repo-owner { color: var(--muted); font-weight: 400; }
+
+.ev-branch {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-pr-title {
+  font-size: 12px;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-pr-title a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.ev-pr-title a:hover { text-decoration: underline; }
+
+.ev-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ev-time {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.ev-spacer { flex: 1; min-width: 8px; }
+
+/* ═══════════════════════════════════════════
+   VIEW 2: BY REPO
+═══════════════════════════════════════════ */
+.repo-section {
+  margin-bottom: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.repo-hd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .1s;
+}
+
+.repo-hd:hover { background: var(--surface2); }
+
+.repo-hd-arrow {
+  color: var(--dim);
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+
+.repo-section.open .repo-hd-arrow { transform: rotate(90deg); }
+
+.repo-hd-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.repo-hd-name .org-prefix { color: var(--muted); font-weight: 400; }
+
+.repo-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.stat-pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+.stat-pill.push { color: var(--purple); border-color: #3d2b5c; background: #1e1a2e; }
+.stat-pill.pr { color: var(--green); border-color: #235c40; background: var(--green-dim); }
+.stat-pill.create { color: var(--accent); border-color: #1f4e79; background: #1c2840; }
+
+.repo-last-active {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--dim);
+}
+
+.repo-body {
+  display: none;
+  border-top: 1px solid var(--border2);
+}
+
+.repo-section.open .repo-body { display: block; }
+
+.repo-event-list { padding: 8px 0; }
+
+.repo-event-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 16px;
+  font-size: 12px;
+  transition: background .1s;
+}
+.repo-event-row:hover { background: var(--surface2); }
+
+.repo-ev-time {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  flex-shrink: 0;
+  min-width: 70px;
+}
+
+.repo-ev-branch {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--purple);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   VIEW 3: HEATMAP
+═══════════════════════════════════════════ */
+#heatmap-wrap {
+  padding: 8px 0;
+}
+
+.heatmap-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.heatmap-scroll {
+  flex: 1;
+  min-width: 0;
+}
+
+.heatmap-grid {
+  display: flex;
+  gap: 3px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.heatmap-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.heatmap-month-row {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 4px;
+  min-height: 14px;
+  align-items: center;
+}
+
+.month-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.day-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  cursor: default;
+  transition: opacity .1s;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.day-cell:hover { opacity: .75; outline: 1px solid var(--accent); }
+
+.day-cell[data-count="0"] { background: var(--surface2); }
+.day-cell[data-level="1"] { background: #1a4a36; }
+.day-cell[data-level="2"] { background: #1e6940; }
+.day-cell[data-level="3"] { background: #29a05e; }
+.day-cell[data-level="4"] { background: var(--green); }
+
+/* heatmap tooltip */
+.hm-tooltip {
+  position: fixed;
+  background: #1c2128;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text);
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+
+.hm-tooltip .tt-date {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.hm-tooltip .tt-count {
+  font-weight: 600;
+  color: var(--green);
+}
+
+.hm-tooltip .tt-breakdown {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+.tt-row .tt-val { color: var(--text); }
+
+.heatmap-stats-bar {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.hm-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hm-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--dim);
+  font-family: var(--mono);
+}
+
+.hm-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+.hm-stat-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.day-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-right: 6px;
+  padding-top: 20px;
+}
+
+.day-label-text {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  height: 12px;
+  display: flex;
+  align-items: center;
+}
+
+/* ═══════════════════════════════════════════
+   VIEW 4: BLAST RADIUS
+═══════════════════════════════════════════ */
+#blast-wrap { }
+
+.blast-title-row {
+  margin-bottom: 20px;
+}
+
+.blast-title-row h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.blast-title-row p {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.blast-bar-wrap {
+  margin-bottom: 24px;
+}
+
+.blast-bar-label {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.blast-stacked-bar {
+  display: flex;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+}
+
+.bar-segment {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,.85);
+  transition: filter .15s, opacity .15s;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.bar-segment:hover { filter: brightness(1.2); }
+.bar-segment.dimmed { opacity: .4; }
+.bar-segment.selected { filter: brightness(1.3); outline: 2px solid white; outline-offset: -2px; }
+
+.blast-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.blast-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 4px;
+  transition: background .1s;
+  border: 1px solid transparent;
+}
+
+.blast-legend-item:hover { background: var(--surface2); }
+.blast-legend-item.selected { background: var(--surface2); border-color: var(--border); color: var(--text); }
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+}
+
+/* blast category detail */
+.blast-detail {
+  margin-top: 12px;
+}
+
+.blast-category-block {
+  display: none;
+  margin-bottom: 16px;
+}
+
+.blast-category-block.visible { display: block; }
+
+.blast-cat-hd {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.blast-branch-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.blast-branch-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--dim);
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border2);
+}
+
+.blast-branch-table td {
+  padding: 5px 8px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border2);
+  vertical-align: middle;
+}
+
+.blast-branch-table tr:last-child td { border-bottom: none; }
+.blast-branch-table tr:hover td { background: var(--surface2); }
+
+.branch-name-cell {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--purple);
+}
+
+.branch-repo-cell {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.branch-count-cell {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════
+   VIEW 5: VELOCITY
+═══════════════════════════════════════════ */
+#vel-wrap { }
+
+.vel-chart-section {
+  margin-bottom: 28px;
+}
+
+.vel-chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.vel-chart-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.vel-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  padding-bottom: 24px;
+  position: relative;
+}
+
+/* y-axis lines */
+.vel-bar-chart::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 0; bottom: 20px;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(25% - 1px),
+    var(--border2) calc(25% - 1px),
+    var(--border2) 25%
+  );
+  pointer-events: none;
+}
+
+.vel-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.vel-bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  position: relative;
+  cursor: default;
+  transition: filter .15s;
+}
+
+.vel-bar:hover { filter: brightness(1.2); }
+
+.vel-bar-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  white-space: nowrap;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) rotate(-45deg);
+  transform-origin: center top;
+  width: max-content;
+}
+
+.vel-bar-count {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* y-axis ticks */
+.vel-y-axis {
+  position: absolute;
+  left: -28px;
+  top: 0;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.vel-y-tick {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  text-align: right;
+}
+
+/* velocity stats */
+.vel-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.vel-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.vel-stat-card .label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--dim);
+  font-family: var(--mono);
+  margin-bottom: 6px;
+}
+
+.vel-stat-card .value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--mono);
+  line-height: 1.2;
+}
+
+.vel-stat-card .sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.vel-stat-card.accent { border-color: #1f4e79; background: #0f1e35; }
+.vel-stat-card.accent .value { color: var(--accent); }
+.vel-stat-card.green { border-color: #235c40; background: #0b1f18; }
+.vel-stat-card.green .value { color: var(--green); }
+.vel-stat-card.yellow { border-color: #5a4220; background: #1e1508; }
+.vel-stat-card.yellow .value { color: var(--yellow); }
+
+/* weekly repo breakdown */
+.vel-week-repos {
+  margin-top: 8px;
+}
+
+.vel-week-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.vel-week-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vel-week-table th {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--dim);
+  padding: 5px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.vel-week-table td {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border2);
+  vertical-align: middle;
+}
+
+.vel-week-table tr:last-child td { border-bottom: none; }
+.vel-week-table tr:hover td { background: var(--surface2); }
+
+.vel-sparkbar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent);
+  min-width: 2px;
+  display: inline-block;
+}
+
+/* ── nav style from existing pages ── */
+#site-nav a {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  transition: color .15s, background .15s;
+}
+#site-nav a:hover { color: #c9d1d9; background: #21262d; }
+#site-nav .sep { width: 1px; height: 16px; background: var(--border); margin: 0 10px; }
+#site-nav .page-title { font-size: 13px; font-weight: 600; color: var(--text); padding: 4px 8px; }
+#cn-browse-anchor { margin-left: auto; display: flex; align-items: center; }
+
+/* ── header right side ── */
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.data-freshness {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+}
+
+.refresh-btn {
+  padding: 4px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--font);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all .15s;
+}
+.refresh-btn:hover { color: var(--text); border-color: var(--accent); }
+
+/* heatmap day-of-week row */
+.heatmap-outer {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.dow-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 18px;
+  flex-shrink: 0;
+}
+
+.dow-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--dim);
+  height: 12px;
+  display: flex;
+  align-items: center;
+  width: 16px;
+}
+
+.hm-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.hm-legend-cells {
+  display: flex;
+  gap: 3px;
+}
+
+.hm-legend-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* tooltip for blast segments */
+.seg-tooltip {
+  position: fixed;
+  background: #1c2128;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+
+/* tabs right side info */
+.tabs-meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 4px;
+  flex-shrink: 0;
+}
+
+.meta-pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Nav -->
+  <div id="site-nav"></div>
+
+  <!-- Page header -->
+  <div id="page-header">
+    <div class="page-hd-row">
+      <h1>Log</h1>
+      <span class="sub">somarc · GitHub activity</span>
+      <span class="user-pill">somarc</span>
+      <div class="header-right">
+        <span class="data-freshness" id="freshness-label"></span>
+        <button class="refresh-btn" id="refresh-btn" onclick="window.__logRefresh && window.__logRefresh()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+    <!-- Tab bar -->
+    <div id="tabs" role="tablist">
+      <button class="tab-btn active" data-view="timeline" role="tab">
+        Timeline <span class="tab-count" id="tc-timeline">—</span>
+      </button>
+      <button class="tab-btn" data-view="repo" role="tab">
+        By Repo <span class="tab-count" id="tc-repo">—</span>
+      </button>
+      <button class="tab-btn" data-view="heatmap" role="tab">
+        Heatmap
+      </button>
+      <button class="tab-btn" data-view="blast" role="tab">
+        Blast Radius
+      </button>
+      <button class="tab-btn" data-view="velocity" role="tab">
+        Velocity
+      </button>
+      <div class="tabs-meta">
+        <span class="meta-pill" id="meta-total">— events</span>
+        <span class="meta-pill" id="meta-range">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Views -->
+  <div id="view-area">
+    <!-- Loading -->
+    <div id="loading">
+      <div class="load-title">Loading activity data…</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="load-steps">
+        <div class="load-step">
+          <div class="step-dot active" id="step-1"></div>
+          <span id="step-1-label">GitHub events (page 1)</span>
+        </div>
+        <div class="load-step">
+          <div class="step-dot" id="step-2"></div>
+          <span id="step-2-label">GitHub events (page 2)</span>
+        </div>
+        <div class="load-step">
+          <div class="step-dot" id="step-3"></div>
+          <span id="step-3-label">Chronicle index</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state">
+      <div class="error-box">
+        <h3>API Error</h3>
+        <p id="error-message">An error occurred while loading data.</p>
+        <button class="retry-btn" onclick="window.__logRefresh && window.__logRefresh()">Retry</button>
+      </div>
+    </div>
+
+    <!-- View 1: Timeline -->
+    <div class="view active" id="view-timeline">
+      <div id="timeline-content"></div>
+    </div>
+
+    <!-- View 2: By Repo -->
+    <div class="view" id="view-repo">
+      <div id="repo-content"></div>
+    </div>
+
+    <!-- View 3: Heatmap -->
+    <div class="view" id="view-heatmap">
+      <div id="heatmap-content"></div>
+    </div>
+
+    <!-- View 4: Blast Radius -->
+    <div class="view" id="view-blast">
+      <div id="blast-content"></div>
+    </div>
+
+    <!-- View 5: Velocity -->
+    <div class="view" id="view-velocity">
+      <div id="velocity-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip elements -->
+<div class="hm-tooltip" id="hm-tooltip"></div>
+<div class="seg-tooltip" id="seg-tooltip"></div>
+
+<script type="module">
+import { buildNav, decorateBrowse } from '/scripts/chronicle-nav.js';
+const nav = document.getElementById('site-nav');
+buildNav(nav, [
+  (() => {
+    const s = document.createElement('span');
+    s.style.cssText = 'font-size:13px;font-weight:600;color:#e6edf3;padding:4px 8px';
+    s.textContent = 'Log';
+    return s;
+  })(),
+]);
+</script>
+
+<script type="module">
+'use strict';
+
+// ── Constants ──────────────────────────────────────────────────────────────
+const GH_USER = 'somarc';
+const GH_EVENTS_URL = `https://api.github.com/users/${GH_USER}/events?per_page=100&page=`;
+const CHRONICLE_INDEX_URL = 'https://main--chronicle--somarc.aem.live/query-index.json';
+const CHRONICLE_BASE = 'https://main--chronicle--somarc.aem.live';
+
+// Repo colours — deterministic palette
+const REPO_PALETTE = [
+  '#58a6ff', '#bc8cff', '#34d399', '#e3b341', '#f0883e',
+  '#f85149', '#79c0ff', '#d2a8ff', '#7ee787', '#ffa657',
+  '#ff7b72', '#56d364', '#e3b341', '#a5d6ff', '#ffb3a7',
+];
+const repoColourMap = new Map();
+
+function getRepoColour(repoName) {
+  if (!repoColourMap.has(repoName)) {
+    const idx = repoColourMap.size % REPO_PALETTE.length;
+    repoColourMap.set(repoName, REPO_PALETTE[idx]);
+  }
+  return repoColourMap.get(repoName);
+}
+
+// Branch prefix categories for Blast Radius
+const BRANCH_CATEGORIES = [
+  { key: 'feat',  label: 'feat/*',   color: '#58a6ff', prefix: ['feat/', 'feature/'] },
+  { key: 'fix',   label: 'fix/*',    color: '#f85149', prefix: ['fix/', 'bugfix/', 'hotfix/'] },
+  { key: 'chore', label: 'chore/*',  color: '#8b949e', prefix: ['chore/', 'refactor/', 'cleanup/'] },
+  { key: 'docs',  label: 'docs/*',   color: '#e3b341', prefix: ['docs/', 'doc/'] },
+  { key: 'main',  label: 'main/trunk', color: '#34d399', prefix: ['main', 'trunk', 'master'] },
+  { key: 'other', label: 'other',    color: '#bc8cff', prefix: [] },
+];
+
+function categorizeBranch(branch) {
+  return BRANCH_CATEGORIES.find(cat => {
+    if (cat.key === 'other') return false;
+    if (cat.key === 'main') return cat.prefix.includes(branch);
+    return cat.prefix.some(p => branch.startsWith(p));
+  }) || BRANCH_CATEGORIES[BRANCH_CATEGORIES.length - 1];
+}
+
+// ── DOM helpers ─────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const el = (tag, cls, html) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+};
+
+// ── State ────────────────────────────────────────────────────────────────────
+let allEvents = [];
+let chronicleEntries = [];
+let activeView = 'timeline';
+let blastSelectedCat = null;
+let fetchedAt = null;
+
+// ── Loading UI ───────────────────────────────────────────────────────────────
+function setStep(n, state) {
+  const dot = $(`step-${n}`);
+  if (!dot) return;
+  dot.className = `step-dot ${state}`;
+}
+
+function setProgress(pct) {
+  const fill = $('progress-fill');
+  if (fill) fill.style.width = `${pct}%`;
+}
+
+function showLoading() {
+  const l = $('loading');
+  if (l) l.classList.remove('hidden');
+  const e = $('error-state');
+  if (e) e.classList.remove('visible');
+}
+
+function hideLoading() {
+  const l = $('loading');
+  if (l) l.classList.add('hidden');
+}
+
+function showError(msg) {
+  hideLoading();
+  const e = $('error-state');
+  if (e) e.classList.add('visible');
+  const m = $('error-message');
+  if (m) m.textContent = msg;
+}
+
+// ── Fetch ─────────────────────────────────────────────────────────────────────
+async function fetchEvents(page) {
+  const res = await fetch(`${GH_EVENTS_URL}${page}`);
+  if (res.status === 403) {
+    throw new Error('GitHub API rate limit reached. The public API allows 60 requests/hour unauthenticated. Try again in a few minutes.');
+  }
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function fetchChronicle() {
+  try {
+    const res = await fetch(CHRONICLE_INDEX_URL);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.data || [];
+  } catch {
+    return [];
+  }
+}
+
+async function loadData() {
+  showLoading();
+  setStep(1, 'active');
+  setStep(2, 'active');
+  setProgress(10);
+
+  try {
+    // Fetch both pages in parallel
+    const [p1res, p2res, chronicle] = await Promise.allSettled([
+      fetchEvents(1),
+      fetchEvents(2),
+      fetchChronicle(),
+    ]);
+
+    setProgress(80);
+
+    if (p1res.status === 'rejected') {
+      throw new Error(p1res.reason?.message || 'Failed to fetch events');
+    }
+
+    const page1 = p1res.value || [];
+    const page2 = p2res.status === 'fulfilled' ? (p2res.value || []) : [];
+
+    setStep(1, 'done');
+    setStep(2, page2.length > 0 ? 'done' : 'error');
+    setStep(3, 'done');
+    setProgress(100);
+
+    // Merge + deduplicate by id
+    const seen = new Set();
+    const merged = [...page1, ...page2].filter(e => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
+
+    allEvents = merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    chronicleEntries = chronicle.status === 'fulfilled' ? chronicle.value : (chronicle || []);
+
+    fetchedAt = new Date();
+    $('freshness-label').textContent = `Fetched ${fetchedAt.toLocaleTimeString()}`;
+
+    // Assign repo colours up-front
+    const repos = [...new Set(allEvents.map(e => e.repo.name))];
+    repos.forEach(r => getRepoColour(r));
+
+    hideLoading();
+    renderAll();
+
+  } catch (err) {
+    setStep(1, 'error');
+    showError(err.message);
+  }
+}
+
+// ── Chronicle helpers ─────────────────────────────────────────────────────────
+function getChronicleForPR(prUrl) {
+  return chronicleEntries.find(e => e['pr-url'] === prUrl) || null;
+}
+
+function getChronicleForRepo(repoName) {
+  // repoName is like "owner/repo", project field is just "repo"
+  const short = repoName.split('/')[1] || repoName;
+  return chronicleEntries.filter(e => e.project === short);
+}
+
+function chronicleBadge(entry) {
+  if (!entry) return '';
+  const url = CHRONICLE_BASE + entry.path;
+  return `<a class="chron-badge" href="${url}" target="_blank" title="${entry.title}">chronicled</a>`;
+}
+
+// ── Formatting helpers ────────────────────────────────────────────────────────
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    weekday: 'short', month: 'short', day: 'numeric',
+  });
+}
+
+function fmtDateShort(iso) {
+  return new Date(iso).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+}
+
+function fmtRelative(iso) {
+  const diff = Date.now() - new Date(iso);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function parseBranch(ref) {
+  return ref ? ref.replace('refs/heads/', '') : 'unknown';
+}
+
+function splitRepo(fullName) {
+  const parts = fullName.split('/');
+  if (parts.length === 2) return { owner: parts[0], repo: parts[1] };
+  return { owner: '', repo: fullName };
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+const ICONS = {
+  push: `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A2.5 2.5 0 0 1 3.5 0h8.75a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V1.5h-8a1 1 0 0 0-1 1v6.708A2.492 2.492 0 0 1 3.5 9h3.25a.75.75 0 0 1 0 1.5H3.5a1 1 0 1 0 0 2h5.75a.75.75 0 0 1 0 1.5H3.5A2.5 2.5 0 0 1 1 11.5Zm13.23 7.79l-2.73 2.73a.75.75 0 0 1-1.06-1.06l1.47-1.47H6.75a.75.75 0 0 1 0-1.5h5.16l-1.47-1.47a.75.75 0 1 1 1.06-1.06l2.73 2.73a.748.748 0 0 1 0 1.06Z"/></svg>`,
+  pr: `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.45 5.154A4.25 4.25 0 0 0 9.25 7.5h1.378a2.251 2.251 0 1 1 0 1.5H9.25A5.734 5.734 0 0 1 5 7.123v3.505a2.25 2.25 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.95-.218ZM4.25 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm8.5-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM5 3.25a.75.75 0 1 0 0 .005V3.25Z"/></svg>`,
+  create: `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7.25-3.25v2.5h2.5a.75.75 0 0 1 0 1.5h-2.5v2.5a.75.75 0 0 1-1.5 0v-2.5h-2.5a.75.75 0 0 1 0-1.5h2.5v-2.5a.75.75 0 0 1 1.5 0Z"/></svg>`,
+  delete: `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75ZM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15ZM6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25Z"/></svg>`,
+  review: `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2.75a.25.25 0 0 1 .25-.25h12.5a.25.25 0 0 1 .25.25v7.5a.25.25 0 0 1-.25.25h-6.5a.75.75 0 0 0-.53.22L4.5 13.44V11.25a.75.75 0 0 0-.75-.75h-2a.25.25 0 0 1-.25-.25v-7.5ZM1.75 1A1.75 1.75 0 0 0 0 2.75v7.5C0 11.216.784 12 1.75 12H3v1.543a1.457 1.457 0 0 0 2.487 1.03L7.31 12.5h6.44A1.75 1.75 0 0 0 15.5 10.75v-8A1.75 1.75 0 0 0 13.75 1Zm5 4.5a.75.75 0 0 0 0 1.5h4.5a.75.75 0 0 0 0-1.5ZM6 7.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 6 7.25Z"/></svg>`,
+  watch: `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2c1.981 0 3.671.992 4.933 2.078 1.27 1.091 2.187 2.345 2.637 3.023a1.62 1.62 0 0 1 0 1.798c-.45.678-1.367 1.932-2.637 3.023C11.67 13.008 9.981 14 8 14c-1.981 0-3.671-.992-4.933-2.078C1.797 10.83.88 9.576.43 8.898a1.62 1.62 0 0 1 0-1.798c.45-.677 1.367-1.931 2.637-3.022C4.33 2.992 6.019 2 8 2ZM1.679 7.932a.12.12 0 0 0 0 .136c.411.622 1.241 1.75 2.366 2.717C5.176 11.758 6.527 12.5 8 12.5c1.473 0 2.825-.742 3.955-1.715 1.124-.967 1.954-2.096 2.366-2.717a.12.12 0 0 0 0-.136c-.412-.621-1.242-1.75-2.366-2.717C10.824 4.242 9.473 3.5 8 3.5c-1.473 0-2.825.742-3.955 1.715-1.124.967-1.954 2.096-2.366 2.717ZM8 10a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 10Z"/></svg>`,
+};
+
+function evIcon(type) {
+  const cls = {
+    'PushEvent': 'push', 'PullRequestEvent': 'pr',
+    'CreateEvent': 'create', 'DeleteEvent': 'delete',
+    'PullRequestReviewEvent': 'review', 'WatchEvent': 'watch',
+  }[type] || 'watch';
+  return `<div class="ev-icon ${cls}">${ICONS[cls] || ICONS.watch}</div>`;
+}
+
+// ── View switching ────────────────────────────────────────────────────────────
+function switchView(name) {
+  activeView = name;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === name);
+  });
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.toggle('active', v.id === `view-${name}`);
+  });
+  // Update hash
+  const url = new URL(window.location.href);
+  url.hash = `#view=${name}`;
+  window.history.replaceState(null, '', url.toString());
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll() {
+  if (!allEvents.length) return;
+
+  const filtered = allEvents.filter(e =>
+    ['PushEvent', 'PullRequestEvent', 'CreateEvent', 'DeleteEvent', 'PullRequestReviewEvent'].includes(e.type)
+  );
+
+  updateMetaPills(filtered);
+  renderTimeline(filtered);
+  renderByRepo(filtered);
+  renderHeatmap(allEvents); // use all for heatmap including WatchEvent
+  renderBlastRadius(filtered);
+  renderVelocity(filtered);
+}
+
+function updateMetaPills(events) {
+  $('tc-timeline').textContent = events.length;
+  $('tc-repo').textContent = new Set(events.map(e => e.repo.name)).size;
+  $('meta-total').textContent = `${events.length} events`;
+
+  if (events.length > 0) {
+    const dates = events.map(e => e.created_at).sort();
+    const from = fmtDateShort(dates[0]);
+    const to = fmtDateShort(dates[dates.length - 1]);
+    $('meta-range').textContent = `${from} – ${to}`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  VIEW 1: TIMELINE
+// ══════════════════════════════════════════════════════════════════════════════
+function renderTimeline(events) {
+  const container = $('timeline-content');
+  container.innerHTML = '';
+
+  // Legend row
+  const legendRow = el('div', '');
+  legendRow.style.cssText = 'display:flex;gap:16px;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;flex-wrap:wrap;';
+  const legendItems = [
+    { cls: 'push', label: 'Push', icon: ICONS.push },
+    { cls: 'pr', label: 'Pull Request', icon: ICONS.pr },
+    { cls: 'create', label: 'Create branch/tag', icon: ICONS.create },
+    { cls: 'delete', label: 'Delete', icon: ICONS.delete },
+    { cls: 'review', label: 'Review', icon: ICONS.review },
+  ];
+  legendItems.forEach(({ cls, label, icon }) => {
+    const item = el('div', '');
+    item.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);';
+    item.innerHTML = `<span class="ev-icon ${cls}" style="width:16px;height:16px">${icon}</span>${label}`;
+    legendRow.appendChild(item);
+  });
+
+  // Repo colour legend
+  const repoSection = el('div', '');
+  repoSection.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:0;margin-left:auto;align-items:center;';
+  const reposInTimeline = [...new Set(events.map(e => e.repo.name))].slice(0, 8);
+  reposInTimeline.forEach(r => {
+    const { repo } = splitRepo(r);
+    const colour = getRepoColour(r);
+    const item = el('span', '');
+    item.style.cssText = `font-size:10px;font-family:var(--mono);color:${colour};display:flex;align-items:center;gap:4px;`;
+    item.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:${colour};display:inline-block;flex-shrink:0"></span>${escHtml(repo)}`;
+    repoSection.appendChild(item);
+  });
+  if (reposInTimeline.length < new Set(events.map(e => e.repo.name)).size) {
+    const more = el('span', '');
+    more.style.cssText = 'font-size:10px;font-family:var(--mono);color:var(--dim);';
+    more.textContent = `+${new Set(events.map(e => e.repo.name)).size - reposInTimeline.length} more`;
+    repoSection.appendChild(more);
+  }
+  legendRow.appendChild(repoSection);
+  container.appendChild(legendRow);
+
+  // Group by day
+  const byDay = new Map();
+  events.forEach(e => {
+    const day = e.created_at.slice(0, 10);
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push(e);
+  });
+
+  const sortedDays = [...byDay.keys()].sort((a, b) => b.localeCompare(a));
+
+  sortedDays.forEach(day => {
+    const dayEvents = byDay.get(day);
+    const group = el('div', 'day-group');
+
+    // Day header
+    const label = el('div', 'day-label');
+    label.innerHTML = `${fmtDate(day + 'T00:00:00Z')} <span class="day-count">${dayEvents.length}</span>`;
+    group.appendChild(label);
+
+    // Events
+    dayEvents.forEach(e => {
+      group.appendChild(buildEventRow(e));
+    });
+
+    container.appendChild(group);
+  });
+}
+
+function buildEventRow(e) {
+  const { type, repo, created_at, payload } = e;
+  const { owner, repo: repoShort } = splitRepo(repo.name);
+  const colour = getRepoColour(repo.name);
+  const row = el('div', 'event-row');
+
+  let details = '';
+  let badge = '';
+
+  if (type === 'PushEvent') {
+    const branch = parseBranch(payload.ref);
+    details = `<span class="ev-branch">${escHtml(branch)}</span>`;
+  } else if (type === 'PullRequestEvent') {
+    const pr = payload.pull_request;
+    const prNum = payload.number || (pr && pr.number);
+    const prUrl = `https://github.com/${repo.name}/pull/${prNum}`;
+    const branch = pr && pr.head ? pr.head.ref : '';
+    const action = payload.action || '';
+    const actionColor = action === 'opened' ? 'var(--green)' : action === 'closed' ? 'var(--red)' : 'var(--muted)';
+    details = `<span class="ev-pr-title">
+      <a href="${prUrl}" target="_blank">PR #${prNum}</a>
+      ${branch ? `<span class="ev-branch" style="color:var(--yellow);margin-left:4px">${escHtml(branch)}</span>` : ''}
+      <span style="color:${actionColor};font-size:10px;font-family:var(--mono);margin-left:4px">${action}</span>
+    </span>`;
+    // Chronicle badge for PR
+    const chEntry = getChronicleForPR(prUrl);
+    if (chEntry) badge = chronicleBadge(chEntry);
+  } else if (type === 'CreateEvent') {
+    const ref = payload.ref || '';
+    const refType = payload.ref_type || 'ref';
+    details = `<span class="ev-branch" style="color:var(--accent)">+${escHtml(ref)} <span style="color:var(--dim);font-weight:400">${refType}</span></span>`;
+  } else if (type === 'DeleteEvent') {
+    const ref = payload.ref || '';
+    details = `<span class="ev-branch" style="color:var(--red)">-${escHtml(ref)}</span>`;
+  } else if (type === 'PullRequestReviewEvent') {
+    details = `<span class="ev-branch" style="color:var(--yellow)">review: ${escHtml(payload.action || '')}</span>`;
+  }
+
+  // Chronicle badge for repo-level (only show on first push per day-group, from the first chron entry)
+  if (!badge && type === 'PushEvent') {
+    const repoEntries = getChronicleForRepo(repo.name);
+    if (repoEntries.length > 0) {
+      const first = repoEntries[0];
+      badge = chronicleBadge(first);
+    }
+  }
+
+  row.innerHTML = `
+    ${evIcon(type)}
+    <span class="ev-repo">
+      <span class="repo-dot" style="background:${colour}"></span>
+      ${owner ? `<span class="repo-owner">${escHtml(owner)}/</span>` : ''}${escHtml(repoShort)}
+    </span>
+    ${details}
+    <span class="ev-spacer"></span>
+    ${badge}
+    <span class="ev-time">${fmtTime(created_at)}</span>
+  `;
+  return row;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  VIEW 2: BY REPO
+// ══════════════════════════════════════════════════════════════════════════════
+function renderByRepo(events) {
+  const container = $('repo-content');
+  container.innerHTML = '';
+
+  // Group by repo
+  const byRepo = new Map();
+  events.forEach(e => {
+    if (!byRepo.has(e.repo.name)) byRepo.set(e.repo.name, []);
+    byRepo.get(e.repo.name).push(e);
+  });
+
+  // Sort by count desc
+  const sorted = [...byRepo.entries()].sort((a, b) => b[1].length - a[1].length);
+
+  sorted.forEach(([repoName, repoEvents], idx) => {
+    const section = buildRepoSection(repoName, repoEvents, idx === 0);
+    container.appendChild(section);
+  });
+}
+
+function buildRepoSection(repoName, events, startOpen) {
+  const { owner, repo } = splitRepo(repoName);
+  const colour = getRepoColour(repoName);
+  const chronicleEntries = getChronicleForRepo(repoName);
+
+  // Count by type
+  const typeCounts = {};
+  events.forEach(e => { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
+
+  // Last active
+  const lastActive = events.map(e => e.created_at).sort().pop();
+
+  const section = el('div', `repo-section${startOpen ? ' open' : ''}`);
+
+  // Build stat pills HTML
+  const pills = [];
+  if (typeCounts['PushEvent']) pills.push(`<span class="stat-pill push">⬆ ${typeCounts['PushEvent']} push${typeCounts['PushEvent'] > 1 ? 'es' : ''}</span>`);
+  if (typeCounts['PullRequestEvent']) pills.push(`<span class="stat-pill pr">⎇ ${typeCounts['PullRequestEvent']} PR</span>`);
+  if (typeCounts['CreateEvent']) pills.push(`<span class="stat-pill create">+ ${typeCounts['CreateEvent']} create</span>`);
+  if (typeCounts['DeleteEvent']) pills.push(`<span class="stat-pill" style="color:var(--red)">− ${typeCounts['DeleteEvent']} delete</span>`);
+
+  // Chronicle badge
+  let chronBadge = '';
+  if (chronicleEntries.length > 0) {
+    const entry = chronicleEntries[0];
+    const url = CHRONICLE_BASE + entry.path;
+    chronBadge = `<a class="chron-badge" href="${url}" target="_blank">${chronicleEntries.length} entr${chronicleEntries.length > 1 ? 'ies' : 'y'}</a>`;
+  }
+
+  section.innerHTML = `
+    <div class="repo-hd">
+      <span class="repo-dot" style="background:${colour};width:10px;height:10px;border-radius:50%;flex-shrink:0"></span>
+      <span class="repo-hd-name">
+        ${owner ? `<span class="org-prefix">${escHtml(owner)}/</span>` : ''}${escHtml(repo)}
+      </span>
+      <div class="repo-stats">
+        ${pills.join('')}
+        ${chronBadge}
+        <span class="repo-last-active">${fmtRelative(lastActive)}</span>
+      </div>
+      <span class="repo-hd-arrow">▶</span>
+    </div>
+    <div class="repo-body">
+      <div class="repo-event-list" id="repo-list-${sanitizeId(repoName)}"></div>
+    </div>
+  `;
+
+  // Toggle
+  const hd = section.querySelector('.repo-hd');
+  hd.addEventListener('click', () => section.classList.toggle('open'));
+
+  // Populate event list lazily when first opened
+  const listId = `repo-list-${sanitizeId(repoName)}`;
+  const populateList = () => {
+    const list = document.getElementById(listId);
+    if (!list || list.dataset.populated) return;
+    list.dataset.populated = '1';
+    events.forEach(e => {
+      const row = el('div', 'repo-event-row');
+      const branch = e.type === 'PushEvent' ? parseBranch(e.payload.ref)
+        : e.type === 'CreateEvent' ? `+${e.payload.ref}`
+        : e.type === 'PullRequestEvent' ? `PR #${e.payload.number}`
+        : e.type;
+      const prTitle = e.type === 'PullRequestEvent' && e.payload.pull_request
+        ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${escHtml(e.payload.pull_request.title || '')}</span>` : '';
+      row.innerHTML = `
+        ${evIcon(e.type)}
+        <span class="repo-ev-time">${new Date(e.created_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} ${fmtTime(e.created_at)}</span>
+        <span class="repo-ev-branch">${escHtml(branch)}</span>
+        ${prTitle}
+      `;
+      list.appendChild(row);
+    });
+  };
+
+  if (startOpen) populateList();
+  hd.addEventListener('click', populateList);
+
+  return section;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  VIEW 3: HEATMAP
+// ══════════════════════════════════════════════════════════════════════════════
+function renderHeatmap(events) {
+  const container = $('heatmap-content');
+  container.innerHTML = '';
+
+  // Build day→events map
+  const dayMap = new Map();
+  events.forEach(e => {
+    const day = e.created_at.slice(0, 10);
+    if (!dayMap.has(day)) dayMap.set(day, []);
+    dayMap.get(day).push(e);
+  });
+
+  // Determine date range: from earliest event day to today
+  const allDays = [...dayMap.keys()].sort();
+  if (!allDays.length) return;
+
+  const earliest = new Date(allDays[0] + 'T00:00:00Z');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Extend to Sunday before earliest and Saturday after today
+  const startSunday = new Date(earliest);
+  startSunday.setUTCDate(startSunday.getUTCDate() - startSunday.getUTCDay());
+
+  const endSaturday = new Date(today);
+  endSaturday.setUTCDate(endSaturday.getUTCDate() + (6 - endSaturday.getUTCDay()));
+
+  // Build week columns (Sun → Sat grid like GitHub)
+  const weeks = [];
+  const cur = new Date(startSunday);
+  while (cur <= endSaturday) {
+    const week = [0, 1, 2, 3, 4, 5, 6].map(() => {
+      const d = new Date(cur);
+      cur.setUTCDate(cur.getUTCDate() + 1);
+      return d;
+    });
+    weeks.push(week);
+  }
+
+  // Max count for scaling
+  let maxCount = 0;
+  dayMap.forEach(evs => { if (evs.length > maxCount) maxCount = evs.length; });
+
+  function getLevel(count) {
+    if (!count) return 0;
+    if (count <= 2) return 1;
+    if (count <= 5) return 2;
+    if (count <= 10) return 3;
+    return 4;
+  }
+
+  // Build tooltip helper
+  const tooltip = $('hm-tooltip');
+
+  const wrap = el('div', 'heatmap-wrap');
+
+  // Title
+  const title = el('div', 'heatmap-title');
+  title.textContent = `Activity heatmap · ${allDays.length > 0 ? allDays[0] : ''} → ${allDays[allDays.length-1] || ''}`;
+  wrap.appendChild(title);
+
+  const outer = el('div', 'heatmap-outer');
+
+  // Day-of-week labels
+  const dowLabels = el('div', 'dow-labels');
+  ['', 'Mon', '', 'Wed', '', 'Fri', ''].forEach(d => {
+    const lbl = el('div', 'dow-label');
+    lbl.textContent = d;
+    dowLabels.appendChild(lbl);
+  });
+  outer.appendChild(dowLabels);
+
+  const scroll = el('div', 'heatmap-scroll');
+  const grid = el('div', 'heatmap-grid');
+
+  weeks.forEach(week => {
+    const col = el('div', 'heatmap-col');
+    week.forEach((date, dow) => {
+      const dateStr = date.toISOString().slice(0, 10);
+      const evs = dayMap.get(dateStr) || [];
+      const count = evs.length;
+      const level = getLevel(count);
+
+      const cell = el('div', 'day-cell');
+      cell.dataset.count = count;
+      if (count > 0) cell.dataset.level = level;
+      cell.title = `${dateStr}: ${count} events`;
+
+      // Tooltip logic
+      cell.addEventListener('mouseenter', ev => {
+        if (!count) {
+          tooltip.style.display = 'none';
+          return;
+        }
+        const typeCounts = {};
+        evs.forEach(e => { typeCounts[e.type] = (typeCounts[e.type] || 0) + 1; });
+        const breakdown = Object.entries(typeCounts)
+          .map(([t, c]) => `<div class="tt-row"><span>${t.replace('Event', '')}</span><span class="tt-val">${c}</span></div>`)
+          .join('');
+        tooltip.innerHTML = `
+          <div class="tt-date">${dateStr}</div>
+          <div class="tt-count">${count} event${count > 1 ? 's' : ''}</div>
+          <div class="tt-breakdown">${breakdown}</div>
+        `;
+        tooltip.style.display = 'block';
+        positionTooltip(ev.clientX, ev.clientY);
+      });
+      cell.addEventListener('mousemove', ev => positionTooltip(ev.clientX, ev.clientY));
+      cell.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+      col.appendChild(cell);
+    });
+    grid.appendChild(col);
+  });
+
+  scroll.appendChild(grid);
+
+  // Build month labels above grid
+  const monthLabelRow = el('div', 'heatmap-month-row');
+  let lastMonth = -1;
+  weeks.forEach(week => {
+    const firstDayOfWeek = week[0];
+    const mo = firstDayOfWeek.getUTCMonth();
+    const lbl = el('div', 'month-label');
+    if (mo !== lastMonth) {
+      lbl.textContent = firstDayOfWeek.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+      lastMonth = mo;
+    } else {
+      lbl.textContent = '';
+    }
+    lbl.style.cssText = 'width:15px;flex-shrink:0;overflow:visible;white-space:nowrap;';
+    monthLabelRow.appendChild(lbl);
+  });
+
+  const gridWrap = el('div');
+  gridWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  gridWrap.appendChild(monthLabelRow);
+  gridWrap.appendChild(grid);
+  scroll.innerHTML = '';
+  scroll.appendChild(gridWrap);
+
+  outer.appendChild(scroll);
+  wrap.appendChild(outer);
+
+  // Legend
+  const legend = el('div', 'hm-legend');
+  legend.innerHTML = `
+    Less
+    <div class="hm-legend-cells">
+      <div class="hm-legend-cell day-cell" data-count="0"></div>
+      <div class="hm-legend-cell day-cell" data-level="1" data-count="1"></div>
+      <div class="hm-legend-cell day-cell" data-level="2" data-count="4"></div>
+      <div class="hm-legend-cell day-cell" data-level="3" data-count="7"></div>
+      <div class="hm-legend-cell day-cell" data-level="4" data-count="12"></div>
+    </div>
+    More
+  `;
+  wrap.appendChild(legend);
+
+  // Stats bar
+  const activeDays = [...dayMap.entries()].filter(([, evs]) => evs.length > 0);
+  const totalEvents = [...dayMap.values()].reduce((s, evs) => s + evs.length, 0);
+
+  let busiestDay = ['—', 0];
+  dayMap.forEach((evs, day) => { if (evs.length > busiestDay[1]) busiestDay = [day, evs.length]; });
+
+  // Most active repo overall
+  const repoTotals = {};
+  events.forEach(e => { repoTotals[e.repo.name] = (repoTotals[e.repo.name] || 0) + 1; });
+  const topRepo = Object.entries(repoTotals).sort((a, b) => b[1] - a[1])[0];
+
+  // Streak
+  const streak = computeStreak(dayMap);
+
+  const statsBar = el('div', 'heatmap-stats-bar');
+  statsBar.innerHTML = `
+    <div class="hm-stat">
+      <div class="hm-stat-label">Total events</div>
+      <div class="hm-stat-value">${totalEvents}</div>
+      <div class="hm-stat-sub">across ${activeDays.length} days</div>
+    </div>
+    <div class="hm-stat">
+      <div class="hm-stat-label">Active days</div>
+      <div class="hm-stat-value">${activeDays.length}</div>
+      <div class="hm-stat-sub">of ${allDays.length} tracked</div>
+    </div>
+    <div class="hm-stat">
+      <div class="hm-stat-label">Busiest day</div>
+      <div class="hm-stat-value">${busiestDay[1]}</div>
+      <div class="hm-stat-sub">${busiestDay[0]}</div>
+    </div>
+    <div class="hm-stat">
+      <div class="hm-stat-label">Current streak</div>
+      <div class="hm-stat-value" style="color:var(--green)">${streak}</div>
+      <div class="hm-stat-sub">consecutive days</div>
+    </div>
+    <div class="hm-stat">
+      <div class="hm-stat-label">Top repo</div>
+      <div class="hm-stat-value" style="font-size:13px;color:var(--accent)">${topRepo ? escHtml(topRepo[0].split('/')[1] || topRepo[0]) : '—'}</div>
+      <div class="hm-stat-sub">${topRepo ? topRepo[1] + ' events' : ''}</div>
+    </div>
+  `;
+
+  wrap.appendChild(statsBar);
+  container.appendChild(wrap);
+}
+
+function computeStreak(dayMap) {
+  // Walk backwards from today counting consecutive active days
+  const cur = new Date();
+  let streak = 0;
+  let daysChecked = 0;
+  while (daysChecked < 365) {
+    const dateStr = cur.toISOString().slice(0, 10);
+    if (dayMap.has(dateStr) && dayMap.get(dateStr).length > 0) {
+      streak++;
+    } else if (streak > 0 || daysChecked > 1) {
+      // Allow today to be empty (current day may not have events yet)
+      if (daysChecked > 0) break;
+    }
+    cur.setUTCDate(cur.getUTCDate() - 1);
+    daysChecked++;
+  }
+  return streak;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  VIEW 4: BLAST RADIUS
+// ══════════════════════════════════════════════════════════════════════════════
+function renderBlastRadius(events) {
+  const container = $('blast-content');
+  container.innerHTML = '';
+
+  const pushEvents = events.filter(e => e.type === 'PushEvent');
+  if (!pushEvents.length) {
+    container.textContent = 'No push events found.';
+    return;
+  }
+
+  // Build branch→{count, repos, chronicleEntries} map
+  const branchData = new Map();
+  pushEvents.forEach(e => {
+    const branch = parseBranch(e.payload.ref);
+    const repoName = e.repo.name;
+    if (!branchData.has(branch)) {
+      branchData.set(branch, { count: 0, repos: new Set(), chron: null });
+    }
+    const d = branchData.get(branch);
+    d.count++;
+    d.repos.add(repoName);
+    if (!d.chron) {
+      // Check if any Chronicle entry links to a PR on this branch's repo
+      const repoChron = getChronicleForRepo(repoName);
+      if (repoChron.length > 0) d.chron = repoChron[0];
+    }
+  });
+
+  // Group branches into categories
+  const catMap = new Map();
+  BRANCH_CATEGORIES.forEach(cat => catMap.set(cat.key, { cat, branches: [], total: 0 }));
+
+  branchData.forEach((data, branch) => {
+    const cat = categorizeBranch(branch);
+    const catEntry = catMap.get(cat.key);
+    catEntry.branches.push({ branch, ...data });
+    catEntry.total += data.count;
+  });
+
+  // Sort branches within categories by count
+  catMap.forEach(entry => {
+    entry.branches.sort((a, b) => b.count - a.count);
+  });
+
+  const totalPushes = pushEvents.length;
+
+  const wrap = el('div', 'blast-wrap');
+
+  // Title
+  wrap.innerHTML = `
+    <div class="blast-title-row">
+      <h2>Blast Radius</h2>
+      <p>Push event distribution by branch naming convention · ${totalPushes} total pushes · ${branchData.size} unique branches</p>
+    </div>
+  `;
+
+  // Stacked bar
+  const barWrap = el('div', 'blast-bar-wrap');
+  const barLabel = el('div', 'blast-bar-label');
+  barLabel.textContent = 'Push events by branch category';
+  barWrap.appendChild(barLabel);
+
+  const stackedBar = el('div', 'blast-stacked-bar');
+
+  BRANCH_CATEGORIES.forEach(cat => {
+    const catEntry = catMap.get(cat.key);
+    if (!catEntry.total) return;
+    const pct = (catEntry.total / totalPushes * 100).toFixed(1);
+    const seg = el('div', 'bar-segment');
+    seg.style.cssText = `width:${pct}%;background:${cat.color};`;
+    seg.dataset.cat = cat.key;
+    if (parseFloat(pct) > 6) {
+      seg.textContent = cat.label.split('/')[0];
+    }
+    seg.setAttribute('title', `${cat.label}: ${catEntry.total} pushes (${pct}%)`);
+
+    // Hover tooltip
+    const segTip = $('seg-tooltip');
+    seg.addEventListener('mouseenter', ev => {
+      segTip.innerHTML = `<strong style="color:${cat.color}">${cat.label}</strong><br>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${catEntry.total} pushes · ${pct}%<br>${catEntry.branches.length} branch${catEntry.branches.length > 1 ? 'es' : ''}</span>`;
+      segTip.style.display = 'block';
+      positionTooltip(ev.clientX, ev.clientY, segTip);
+    });
+    seg.addEventListener('mousemove', ev => positionTooltip(ev.clientX, ev.clientY, segTip));
+    seg.addEventListener('mouseleave', () => { segTip.style.display = 'none'; });
+
+    seg.addEventListener('click', () => {
+      const alreadySelected = seg.classList.contains('selected');
+      stackedBar.querySelectorAll('.bar-segment').forEach(s => s.classList.remove('selected', 'dimmed'));
+      if (!alreadySelected) {
+        seg.classList.add('selected');
+        stackedBar.querySelectorAll('.bar-segment:not(.selected)').forEach(s => s.classList.add('dimmed'));
+        blastSelectedCat = cat.key;
+      } else {
+        blastSelectedCat = null;
+      }
+      updateBlastDetail();
+    });
+
+    stackedBar.appendChild(seg);
+  });
+
+  barWrap.appendChild(stackedBar);
+
+  // Legend
+  const legend = el('div', 'blast-legend');
+  BRANCH_CATEGORIES.forEach(cat => {
+    const catEntry = catMap.get(cat.key);
+    if (!catEntry.total) return;
+    const pct = (catEntry.total / totalPushes * 100).toFixed(1);
+    const item = el('div', 'blast-legend-item');
+    item.dataset.cat = cat.key;
+    item.innerHTML = `
+      <span class="legend-swatch" style="background:${cat.color}"></span>
+      ${cat.label}
+      <span class="legend-count">${catEntry.total} · ${pct}%</span>
+    `;
+    item.addEventListener('click', () => {
+      const alreadySelected = item.classList.contains('selected');
+      document.querySelectorAll('.blast-legend-item').forEach(i => i.classList.remove('selected'));
+      stackedBar.querySelectorAll('.bar-segment').forEach(s => s.classList.remove('selected', 'dimmed'));
+      if (!alreadySelected) {
+        item.classList.add('selected');
+        blastSelectedCat = cat.key;
+        const seg = stackedBar.querySelector(`[data-cat="${cat.key}"]`);
+        if (seg) {
+          seg.classList.add('selected');
+          stackedBar.querySelectorAll('.bar-segment:not(.selected)').forEach(s => s.classList.add('dimmed'));
+        }
+      } else {
+        blastSelectedCat = null;
+      }
+      updateBlastDetail();
+    });
+    legend.appendChild(item);
+  });
+
+  barWrap.appendChild(legend);
+  wrap.appendChild(barWrap);
+
+  // Detail blocks (one per category)
+  const detail = el('div', 'blast-detail');
+  detail.id = 'blast-detail-container';
+
+  BRANCH_CATEGORIES.forEach(cat => {
+    const catEntry = catMap.get(cat.key);
+    if (!catEntry.total) return;
+
+    const block = el('div', 'blast-category-block');
+    block.id = `blast-cat-${cat.key}`;
+
+    const hd = el('div', 'blast-cat-hd');
+    hd.innerHTML = `
+      <span class="legend-swatch" style="background:${cat.color}"></span>
+      <span style="color:${cat.color}">${cat.label}</span>
+      <span style="color:var(--dim)">${catEntry.total} push${catEntry.total > 1 ? 'es' : ''} · ${catEntry.branches.length} branch${catEntry.branches.length > 1 ? 'es' : ''}</span>
+    `;
+    block.appendChild(hd);
+
+    const table = el('table', 'blast-branch-table');
+    table.innerHTML = `
+      <thead><tr>
+        <th>Branch</th><th>Repo${catEntry.branches.some(b => b.repos.size > 1) ? 's' : ''}</th>
+        <th>Pushes</th><th>Chronicle</th>
+      </tr></thead>
+    `;
+    const tbody = document.createElement('tbody');
+
+    catEntry.branches.forEach(({ branch, count, repos, chron }) => {
+      const tr = document.createElement('tr');
+      const repoList = [...repos].map(r => {
+        const colour = getRepoColour(r);
+        const { owner, repo } = splitRepo(r);
+        return `<span style="font-family:var(--mono);font-size:11px"><span class="repo-dot" style="background:${colour};width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px"></span><span style="color:var(--dim)">${owner}/</span>${repo}</span>`;
+      }).join(' ');
+      const bar = `<span class="vel-sparkbar" style="width:${Math.max(12, Math.round(count / catEntry.branches[0].count * 80))}px;background:${cat.color}"></span>`;
+      tr.innerHTML = `
+        <td class="branch-name-cell">${escHtml(branch)}</td>
+        <td class="branch-repo-cell">${repoList}</td>
+        <td class="branch-count-cell">${bar} ${count}</td>
+        <td>${chron ? chronicleBadge(chron) : '<span style="color:var(--dim);font-size:11px">—</span>'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    block.appendChild(table);
+    detail.appendChild(block);
+  });
+
+  wrap.appendChild(detail);
+  container.appendChild(wrap);
+
+  // Show all by default
+  updateBlastDetail();
+}
+
+function updateBlastDetail() {
+  document.querySelectorAll('.blast-category-block').forEach(block => {
+    const cat = block.id.replace('blast-cat-', '');
+    if (!blastSelectedCat || blastSelectedCat === cat) {
+      block.classList.add('visible');
+    } else {
+      block.classList.remove('visible');
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  VIEW 5: VELOCITY
+// ══════════════════════════════════════════════════════════════════════════════
+function renderVelocity(events) {
+  const container = $('velocity-content');
+  container.innerHTML = '';
+
+  if (!events.length) return;
+
+  // Group by ISO week (Mon–Sun)
+  const weekMap = new Map();
+  events.forEach(e => {
+    const week = getISOWeekKey(new Date(e.created_at));
+    if (!weekMap.has(week)) weekMap.set(week, { events: [], repos: {} });
+    const wd = weekMap.get(week);
+    wd.events.push(e);
+    wd.repos[e.repo.name] = (wd.repos[e.repo.name] || 0) + 1;
+  });
+
+  const sortedWeeks = [...weekMap.keys()].sort();
+  const maxWeekCount = Math.max(...[...weekMap.values()].map(w => w.events.length));
+
+  // Stats
+  const totalEvents = events.length;
+  const avgPerWeek = (totalEvents / sortedWeeks.length).toFixed(1);
+  let busiestWeek = ['', 0];
+  weekMap.forEach((wd, wk) => {
+    if (wd.events.length > busiestWeek[1]) busiestWeek = [wk, wd.events.length];
+  });
+
+  // Streak
+  const dayMap = new Map();
+  events.forEach(e => {
+    const day = e.created_at.slice(0, 10);
+    if (!dayMap.has(day)) dayMap.set(day, []);
+    dayMap.get(day).push(e);
+  });
+  const streak = computeStreak(dayMap);
+
+  const wrap = el('div', 'vel-wrap');
+
+  // Stats cards
+  const statsGrid = el('div', 'vel-stats-grid');
+  statsGrid.innerHTML = `
+    <div class="vel-stat-card accent">
+      <div class="label">Total events</div>
+      <div class="value">${totalEvents}</div>
+      <div class="sub">${sortedWeeks.length} week${sortedWeeks.length > 1 ? 's' : ''} of data</div>
+    </div>
+    <div class="vel-stat-card yellow">
+      <div class="label">Avg / week</div>
+      <div class="value">${avgPerWeek}</div>
+      <div class="sub">events per week</div>
+    </div>
+    <div class="vel-stat-card">
+      <div class="label">Busiest week</div>
+      <div class="value">${busiestWeek[1]}</div>
+      <div class="sub">${busiestWeek[0]}</div>
+    </div>
+    <div class="vel-stat-card green">
+      <div class="label">Current streak</div>
+      <div class="value">${streak}</div>
+      <div class="sub">consecutive active days</div>
+    </div>
+  `;
+  wrap.appendChild(statsGrid);
+
+  // Bar chart section
+  const chartSection = el('div', 'vel-chart-section');
+  chartSection.innerHTML = `
+    <div class="vel-chart-title">Events per week</div>
+    <div class="vel-chart-sub">Bar height = total events · colour = dominant repo that week</div>
+  `;
+
+  const barChart = el('div', 'vel-bar-chart');
+  barChart.style.paddingLeft = '36px';
+
+  // Y-axis
+  const yAxis = el('div', 'vel-y-axis');
+  [maxWeekCount, Math.round(maxWeekCount * .75), Math.round(maxWeekCount * .5), Math.round(maxWeekCount * .25), 0].forEach(v => {
+    const tick = el('div', 'vel-y-tick');
+    tick.textContent = v;
+    yAxis.appendChild(tick);
+  });
+  barChart.appendChild(yAxis);
+
+  sortedWeeks.forEach(week => {
+    const wd = weekMap.get(week);
+    const count = wd.events.length;
+    // 136px is the chart usable height (160 - 24px bottom padding)
+    const CHART_H = 136;
+    const heightPx = maxWeekCount > 0 ? Math.max(2, Math.round(count / maxWeekCount * CHART_H)) : 2;
+
+    // Dominant repo
+    const domRepo = Object.entries(wd.repos).sort((a, b) => b[1] - a[1])[0];
+    const barColor = domRepo ? getRepoColour(domRepo[0]) : '#30363d';
+
+    const group = el('div', 'vel-bar-group');
+
+    const bar = el('div', 'vel-bar');
+    bar.style.cssText = `height:${heightPx}px;background:${barColor};`;
+    bar.title = `${week}: ${count} events · top repo: ${domRepo ? domRepo[0] : '—'}`;
+
+    if (count > 0) {
+      const countLbl = el('div', 'vel-bar-count');
+      countLbl.textContent = count;
+      bar.appendChild(countLbl);
+    }
+
+    group.appendChild(bar);
+
+    const lbl = el('div', 'vel-bar-label');
+    // week key is YYYY-WNN — find Monday of that week
+    const [yr, wn] = week.split('-W').map(Number);
+    const jan4 = new Date(Date.UTC(yr, 0, 4));
+    const weekStart = new Date(jan4);
+    weekStart.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() || 7) + 1 + (wn - 1) * 7);
+    lbl.textContent = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    group.appendChild(lbl);
+
+    barChart.appendChild(group);
+  });
+
+  chartSection.appendChild(barChart);
+  wrap.appendChild(chartSection);
+
+  // Weekly repo breakdown table
+  const weekReposSection = el('div', 'vel-week-repos');
+  weekReposSection.innerHTML = '<div class="vel-week-title">Weekly repo breakdown</div>';
+
+  const table = el('table', 'vel-week-table');
+  table.innerHTML = `
+    <thead><tr>
+      <th>Week</th>
+      <th>Events</th>
+      <th>Repos touched</th>
+      <th>Breakdown</th>
+    </tr></thead>
+  `;
+  const tbody = document.createElement('tbody');
+
+  // Show most recent weeks first
+  [...sortedWeeks].reverse().forEach(week => {
+    const wd = weekMap.get(week);
+    const count = wd.events.length;
+    const repoList = Object.entries(wd.repos).sort((a, b) => b[1] - a[1]);
+
+    const reposHtml = repoList.slice(0, 4).map(([r, c]) => {
+      const colour = getRepoColour(r);
+      const { repo } = splitRepo(r);
+      return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-family:var(--mono);color:var(--muted);margin-right:6px">
+        <span style="width:7px;height:7px;border-radius:50%;background:${colour};flex-shrink:0;display:inline-block"></span>${escHtml(repo)}<span style="color:var(--dim)">${c}</span>
+      </span>`;
+    }).join('');
+
+    const barHtml = repoList.slice(0, 5).map(([r, c]) => {
+      const colour = getRepoColour(r);
+      const w = Math.max(4, Math.round(c / count * 80));
+      return `<span style="display:inline-block;width:${w}px;height:10px;background:${colour};border-radius:2px;margin-right:2px" title="${r}: ${c}"></span>`;
+    }).join('');
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap">${week}</td>
+      <td style="font-family:var(--mono);font-size:13px;font-weight:600">${count}</td>
+      <td>${reposHtml}${repoList.length > 4 ? `<span style="font-size:10px;color:var(--dim)">+${repoList.length - 4}</span>` : ''}</td>
+      <td style="white-space:nowrap">${barHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  weekReposSection.appendChild(table);
+  wrap.appendChild(weekReposSection);
+
+  container.appendChild(wrap);
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+function getISOWeekKey(date) {
+  // Returns YYYY-WNN string (ISO week)
+  const d = new Date(date);
+  d.setUTCHours(0, 0, 0, 0);
+  // Thursday in current week
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function sanitizeId(str) {
+  return str.replace(/[^a-zA-Z0-9]/g, '-');
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function positionTooltip(x, y, tip) {
+  const t = tip || $('hm-tooltip');
+  const margin = 12;
+  const rect = t.getBoundingClientRect();
+  let left = x + margin;
+  let top = y + margin;
+  if (left + rect.width > window.innerWidth - 8) left = x - rect.width - margin;
+  if (top + rect.height > window.innerHeight - 8) top = y - rect.height - margin;
+  t.style.left = `${left}px`;
+  t.style.top = `${top}px`;
+}
+
+// ── Tab interaction ───────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+// ── Hash routing ──────────────────────────────────────────────────────────────
+function restoreHash() {
+  const hash = window.location.hash;
+  const match = hash.match(/view=([a-z]+)/);
+  if (match && ['timeline', 'repo', 'heatmap', 'blast', 'velocity'].includes(match[1])) {
+    switchView(match[1]);
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+window.__logRefresh = loadData;
+
+restoreHash();
+loadData();
+</script>
+</body>
+</html>
