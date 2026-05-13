@@ -304,7 +304,7 @@ html, body {
 /* ═══════════════════════════════════════════
    VIEW 1: TIMELINE
 ═══════════════════════════════════════════ */
-.day-group { margin-bottom: 24px; }
+.day-group { margin-bottom: 20px; }
 
 .day-label {
   font-size: 11px;
@@ -312,7 +312,7 @@ html, body {
   text-transform: uppercase;
   letter-spacing: .08em;
   color: var(--muted);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border2);
   display: flex;
@@ -364,6 +364,96 @@ html, body {
 
 .day-events { }
 .day-group.collapsed .day-events { display: none; }
+
+/* Lane rows — grouped repo+branch push lanes */
+.lane-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .1s;
+}
+.lane-row:hover { background: var(--surface2); }
+.lane-row.expanded { background: var(--surface2); border-radius: 6px 6px 0 0; }
+
+.lane-repo {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+  min-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lane-branch {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--dim);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lane-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  flex-shrink: 0;
+  min-width: 28px;
+}
+
+/* Dot timeline bar */
+.lane-bar {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  position: relative;
+}
+.lane-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.85;
+  transition: opacity .1s, transform .1s;
+}
+.lane-row:hover .lane-dot { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+.lane-time-range {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--dim);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.lane-toggle {
+  font-size: 9px;
+  color: var(--dim);
+  opacity: 0.5;
+  flex-shrink: 0;
+  transition: transform .15s;
+}
+.lane-row.expanded .lane-toggle { transform: rotate(180deg); opacity: 1; }
+
+/* Expanded individual events inside a lane */
+.lane-events {
+  display: none;
+  background: var(--surface2);
+  border-radius: 0 0 6px 6px;
+  border-top: 1px solid var(--border2);
+  margin-bottom: 2px;
+  overflow: hidden;
+}
+.lane-events.open { display: block; }
 
 .event-row {
   display: flex;
@@ -1645,42 +1735,24 @@ function renderTimeline(events) {
   const container = $('timeline-content');
   container.innerHTML = '';
 
-  // Legend row
-  const legendRow = el('div', '');
-  legendRow.style.cssText = 'display:flex;gap:16px;margin-bottom:16px;padding:10px 14px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;flex-wrap:wrap;';
-  const legendItems = [
-    { cls: 'push', label: 'Push', icon: ICONS.push },
-    { cls: 'pr', label: 'Pull Request', icon: ICONS.pr },
-    { cls: 'create', label: 'Create branch/tag', icon: ICONS.create },
-    { cls: 'delete', label: 'Delete', icon: ICONS.delete },
-    { cls: 'review', label: 'Review', icon: ICONS.review },
-  ];
-  legendItems.forEach(({ cls, label, icon }) => {
-    const item = el('div', '');
-    item.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);';
-    item.innerHTML = `<span class="ev-icon ${cls}" style="width:16px;height:16px">${icon}</span>${label}`;
-    legendRow.appendChild(item);
-  });
-
   // Repo colour legend
-  const repoSection = el('div', '');
-  repoSection.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:0;margin-left:auto;align-items:center;';
-  const reposInTimeline = [...new Set(events.map(e => e.repo.name))].slice(0, 8);
-  reposInTimeline.forEach(r => {
+  const legendRow = el('div', '');
+  legendRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:8px 12px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;align-items:center;';
+  const repoNames = [...new Set(events.map(e => e.repo.name))];
+  repoNames.slice(0, 9).forEach(r => {
     const { repo } = splitRepo(r);
     const colour = getRepoColour(r);
     const item = el('span', '');
     item.style.cssText = `font-size:10px;font-family:var(--mono);color:${colour};display:flex;align-items:center;gap:4px;`;
     item.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:${colour};display:inline-block;flex-shrink:0"></span>${escHtml(repo)}`;
-    repoSection.appendChild(item);
+    legendRow.appendChild(item);
   });
-  if (reposInTimeline.length < new Set(events.map(e => e.repo.name)).size) {
+  if (repoNames.length > 9) {
     const more = el('span', '');
     more.style.cssText = 'font-size:10px;font-family:var(--mono);color:var(--dim);';
-    more.textContent = `+${new Set(events.map(e => e.repo.name)).size - reposInTimeline.length} more`;
-    repoSection.appendChild(more);
+    more.textContent = `+${repoNames.length - 9} more`;
+    legendRow.appendChild(more);
   }
-  legendRow.appendChild(repoSection);
   container.appendChild(legendRow);
 
   // Group by day
@@ -1691,95 +1763,178 @@ function renderTimeline(events) {
     byDay.get(day).push(e);
   });
 
-  const sortedDays = [...byDay.keys()].sort((a, b) => b.localeCompare(a));
-
-  sortedDays.forEach(day => {
+  [...byDay.keys()].sort((a, b) => b.localeCompare(a)).forEach(day => {
     const dayEvents = byDay.get(day);
     const group = el('div', 'day-group');
 
-    // Build type summary pills for collapsed state
+    // Collapsed summary pills
     const typeCounts = dayEvents.reduce((acc, e) => {
       const t = e.type.replace('Event', '').toLowerCase();
       acc[t] = (acc[t] || 0) + 1;
       return acc;
     }, {});
-    const typeColours = { push: 'var(--accent)', pullrequest: 'var(--green)', create: 'var(--yellow)', delete: 'var(--red)', pullrequestreview: 'var(--purple)' };
+    const typeColours = { push: 'var(--purple)', pullrequest: 'var(--green)', create: 'var(--accent)', delete: 'var(--red)', pullrequestreview: 'var(--yellow)' };
     const summaryHtml = Object.entries(typeCounts).map(([t, n]) => {
       const colour = typeColours[t] || 'var(--muted)';
       return `<span class="day-summary-pill" style="border-color:${colour}33;color:${colour}">${n} ${t}</span>`;
     }).join('');
 
-    // Day header
     const label = el('div', 'day-label');
     label.innerHTML = `${fmtDate(day + 'T00:00:00Z')} <span class="day-count">${dayEvents.length}</span><div class="day-summary">${summaryHtml}</div><span class="day-toggle">▾</span>`;
     label.addEventListener('click', () => group.classList.toggle('collapsed'));
     group.appendChild(label);
 
-    // Events container
     const eventsEl = el('div', 'day-events');
-    dayEvents.forEach(e => eventsEl.appendChild(buildEventRow(e)));
-    group.appendChild(eventsEl);
 
+    // Separate push events (lane-grouped) from signal events (always full rows)
+    const pushEvents = dayEvents.filter(e => e.type === 'PushEvent');
+    const signalEvents = dayEvents.filter(e => e.type !== 'PushEvent');
+
+    // Compute day time span for dot positioning
+    const allTimes = dayEvents.map(e => new Date(e.created_at).getTime());
+    const dayMin = Math.min(...allTimes);
+    const dayMax = Math.max(...allTimes);
+    const daySpan = dayMax - dayMin || 1;
+
+    // Build push lanes: group by repo+branch
+    const laneMap = new Map();
+    pushEvents.forEach(e => {
+      const branch = parseBranch(e.payload.ref);
+      const key = `${e.repo.name}::${branch}`;
+      if (!laneMap.has(key)) laneMap.set(key, { repo: e.repo.name, branch, events: [] });
+      laneMap.get(key).events.push(e);
+    });
+
+    // Render signal events (PRs, creates, deletes) first — they're the headline
+    signalEvents.forEach(e => eventsEl.appendChild(buildSignalRow(e, dayMin, daySpan)));
+
+    // Render push lanes
+    laneMap.forEach(({ repo, branch, events: laneEvents }) => {
+      const colour = getRepoColour(repo);
+      const { repo: repoShort } = splitRepo(repo);
+      const times = laneEvents.map(e => new Date(e.created_at).getTime()).sort((a, b) => a - b);
+      const earliest = new Date(times[0]);
+      const latest = new Date(times[times.length - 1]);
+      const timeLabel = times.length > 1
+        ? `${fmtTime(earliest.toISOString())}–${fmtTime(latest.toISOString())}`
+        : fmtTime(earliest.toISOString());
+
+      // Chronicle badge — once per lane
+      const repoEntries = getChronicleForRepo(repo);
+      const badge = repoEntries.length > 0 ? chronicleBadge(repoEntries[0]) : '';
+
+      const laneRow = el('div', 'lane-row');
+
+      // Dot bar
+      const barDiv = el('div', 'lane-bar');
+      times.forEach(t => {
+        const pct = daySpan > 1 ? ((t - dayMin) / daySpan) * 92 + 4 : 50; // 4–96% range
+        const dot = el('div', 'lane-dot');
+        dot.style.cssText = `left:${pct.toFixed(1)}%;background:${colour};`;
+        dot.title = new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        barDiv.appendChild(dot);
+      });
+
+      laneRow.innerHTML = `
+        <span class="ev-icon push" style="flex-shrink:0">${ICONS.push}</span>
+        <span class="lane-repo" style="color:${colour}">${escHtml(repoShort)}</span>
+        <span class="lane-branch">${escHtml(branch)}</span>
+        <span class="lane-count">×${laneEvents.length}</span>
+      `;
+      laneRow.appendChild(barDiv);
+      const timeSpan = el('span', 'lane-time-range');
+      timeSpan.textContent = timeLabel;
+      laneRow.appendChild(timeSpan);
+      if (badge) {
+        const badgeEl = el('span', '');
+        badgeEl.innerHTML = badge;
+        laneRow.appendChild(badgeEl);
+      }
+      const toggleSpan = el('span', 'lane-toggle');
+      toggleSpan.textContent = '▾';
+      laneRow.appendChild(toggleSpan);
+
+      // Expandable individual event rows
+      const laneEventsEl = el('div', 'lane-events');
+      laneEvents.sort((a, b) => a.created_at.localeCompare(b.created_at)).forEach(e => {
+        laneEventsEl.appendChild(buildEventRow(e));
+      });
+
+      laneRow.addEventListener('click', () => {
+        const open = laneEventsEl.classList.toggle('open');
+        laneRow.classList.toggle('expanded', open);
+      });
+
+      eventsEl.appendChild(laneRow);
+      eventsEl.appendChild(laneEventsEl);
+    });
+
+    group.appendChild(eventsEl);
     container.appendChild(group);
   });
 }
 
-function buildEventRow(e) {
+function buildSignalRow(e, dayMin, daySpan) {
   const { type, repo, created_at, payload } = e;
-  const { owner, repo: repoShort } = splitRepo(repo.name);
   const colour = getRepoColour(repo.name);
+  const { repo: repoShort } = splitRepo(repo.name);
   const row = el('div', 'event-row');
 
   let details = '';
   let badge = '';
 
-  if (type === 'PushEvent') {
-    const branch = parseBranch(payload.ref);
-    details = `<span class="ev-branch">${escHtml(branch)}</span>`;
-  } else if (type === 'PullRequestEvent') {
+  if (type === 'PullRequestEvent') {
     const pr = payload.pull_request;
     const prNum = payload.number || (pr && pr.number);
     const prUrl = `https://github.com/${repo.name}/pull/${prNum}`;
     const branch = pr && pr.head ? pr.head.ref : '';
     const action = payload.action || '';
-    const actionColor = action === 'opened' ? 'var(--green)' : action === 'closed' ? 'var(--red)' : 'var(--muted)';
+    const actionColor = action === 'opened' ? 'var(--green)' : action === 'closed' || action === 'merged' ? 'var(--red)' : 'var(--muted)';
     details = `<span class="ev-pr-title">
-      <a href="${prUrl}" target="_blank">PR #${prNum}</a>
+      <a href="${prUrl}" target="_blank" rel="noopener">PR #${prNum}</a>
       ${branch ? `<span class="ev-branch" style="color:var(--yellow);margin-left:4px">${escHtml(branch)}</span>` : ''}
       <span style="color:${actionColor};font-size:10px;font-family:var(--mono);margin-left:4px">${action}</span>
     </span>`;
-    // Chronicle badge for PR
     const chEntry = getChronicleForPR(prUrl);
     if (chEntry) badge = chronicleBadge(chEntry);
   } else if (type === 'CreateEvent') {
     const ref = payload.ref || '';
     const refType = payload.ref_type || 'ref';
-    details = `<span class="ev-branch" style="color:var(--accent)">+${escHtml(ref)} <span style="color:var(--dim);font-weight:400">${refType}</span></span>`;
+    details = `<span class="ev-branch" style="color:var(--accent)">+ ${escHtml(ref)} <span style="color:var(--dim);font-weight:400">${refType}</span></span>`;
   } else if (type === 'DeleteEvent') {
     const ref = payload.ref || '';
-    details = `<span class="ev-branch" style="color:var(--red)">-${escHtml(ref)}</span>`;
+    details = `<span class="ev-branch" style="color:var(--red)">deleted ${escHtml(ref)}</span>`;
   } else if (type === 'PullRequestReviewEvent') {
-    details = `<span class="ev-branch" style="color:var(--yellow)">review: ${escHtml(payload.action || '')}</span>`;
-  }
-
-  // Chronicle badge for repo-level (only show on first push per day-group, from the first chron entry)
-  if (!badge && type === 'PushEvent') {
-    const repoEntries = getChronicleForRepo(repo.name);
-    if (repoEntries.length > 0) {
-      const first = repoEntries[0];
-      badge = chronicleBadge(first);
-    }
+    details = `<span class="ev-branch" style="color:var(--yellow)">review · ${escHtml(payload.action || '')}</span>`;
   }
 
   row.innerHTML = `
     ${evIcon(type)}
     <span class="ev-repo">
       <span class="repo-dot" style="background:${colour}"></span>
-      ${owner ? `<span class="repo-owner">${escHtml(owner)}/</span>` : ''}${escHtml(repoShort)}
+      ${escHtml(repoShort)}
     </span>
     ${details}
     <span class="ev-spacer"></span>
     ${badge}
+    <span class="ev-time">${fmtTime(created_at)}</span>
+  `;
+  return row;
+}
+
+function buildEventRow(e) {
+  const { type, repo, created_at, payload } = e;
+  const colour = getRepoColour(repo.name);
+  const { repo: repoShort } = splitRepo(repo.name);
+  const row = el('div', 'event-row');
+  row.style.cssText = 'padding-left:20px;opacity:0.75;';
+
+  const branch = type === 'PushEvent' ? parseBranch(payload.ref) : '';
+  row.innerHTML = `
+    ${evIcon(type)}
+    <span class="ev-repo" style="color:${colour}">${escHtml(repoShort)}</span>
+    ${branch ? `<span class="ev-branch">${escHtml(branch)}</span>` : ''}
+    <span class="ev-spacer"></span>
     <span class="ev-time">${fmtTime(created_at)}</span>
   `;
   return row;
