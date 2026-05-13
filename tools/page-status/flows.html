@@ -168,7 +168,12 @@ svg#dg{display:block;width:100%;height:100%}
   <div class="sep"></div>
   <span class="page-title">Classification Flow Explorer</span>
   <span class="badge">page-status · fix #340 · BYOM sourceLastModified</span>
+  <div id="cn-browse-anchor"></div>
 </nav>
+<script type="module">
+  import { decorateBrowse } from '/scripts/chronicle-nav.js';
+  decorateBrowse(document.getElementById('cn-browse-anchor'));
+</script>
 
 <div id="workspace">
 
