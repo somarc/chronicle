@@ -70,9 +70,26 @@ da --org somarc --repo chronicle content put /issues/<slug>.html /tmp/<slug>.htm
 
 ### 3. Create a Flow Explorer (optional but encouraged)
 
-Create `tools/<project>/flows.html` using `tools/page-status/flows.html` as the template. Define `DATA.nodes`, `DATA.edges`, and `DATA.commands` (scenarios + steps). Commit and push — no DA pipeline needed for code files.
+Flow Explorers are single-page HTML apps that visualise the call flow affected by a change. They're **AI-generated in one shot** from a prompt — no manual HTML authoring required.
 
-Add a card to `tools/index.html` for the new explorer.
+**The prompt template:**
+
+```
+Create a single-page HTML file that documents the git changes in this feature branch.
+Show all the components/packages on the page. I should be able to click on different
+artifact surfaces and it will highlight the flow between the packages, annotating how
+things are passed between each package to complete the action. Drive this from a JSON
+document embedded in the page that defines all the flows.
+
+For inspiration see: https://main--da-cli-eds--somarc.aem.live/tools/da-cli-flows.html
+
+The page should match the Chronicle dark theme (background #0d1117, IBM Plex Mono/Sans,
+GitHub-style dark palette). Output a single self-contained HTML file.
+```
+
+Feed this prompt — along with the relevant diff, file list, or description of the change — to your AI of choice. The result drops straight into `tools/<project>/flows.html`.
+
+Once generated, commit and push — no DA pipeline needed for code files. Then add a card to `tools/index.html` for the new explorer.
 
 ### 4. Preview and publish
 
