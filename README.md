@@ -28,6 +28,27 @@ Chronicle documents shipped engineering work as structured entries: each fix get
 
 ---
 
+## Prerequisites
+
+### da-cli
+
+This repo uses [`da-cli`](https://github.com/somarc/da-cli) — a bespoke CLI for Adobe Edge Delivery Services built on the DA Admin API. This is **not** Adobe's official tooling; it's a custom CLI maintained alongside this project.
+
+```sh
+npm install -g @somarc/da-cli
+```
+
+First-time setup:
+
+```sh
+da auth login       # authenticate against DA
+da config init      # interactive setup — writes .da.json in the current directory
+```
+
+All `da` commands in this README assume a `.da.json` is present or that `--org somarc --repo chronicle` is passed explicitly.
+
+---
+
 ## Adding a new entry
 
 ### 1. Generate a draft from a PR URL
