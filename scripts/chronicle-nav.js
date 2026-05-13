@@ -243,7 +243,7 @@ export function buildNav(target, slots = []) {
   toolsSep.className = 'cn-sep';
   const toolsLink = document.createElement('a');
   toolsLink.className = 'cn-nav-link';
-  toolsLink.href = '/tools/';
+  toolsLink.href = '/tools/index.html';
   toolsLink.textContent = 'Explorers';
   wrap.append(toolsSep, toolsLink);
 
