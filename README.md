@@ -1,34 +1,108 @@
-# Your Project's Title...
-Your project's description...
+# Chronicle
 
-## Environments
-- Preview: https://main--{repo}--{owner}.aem.page/
-- Live: https://main--{repo}--{owner}.aem.live/
+A growing catalogue of engineering work — fixes, patterns, and flow explorers across the AEM toolchain.
 
-## Documentation
+- **Live:** https://main--chronicle--somarc.aem.live/
+- **Preview:** https://main--chronicle--somarc.aem.page/
 
-Before using the aem-boilerplate, we recommand you to go through the documentation on https://www.aem.live/docs/ and more specifically:
-1. [Developer Tutorial](https://www.aem.live/developer/tutorial)
-2. [The Anatomy of a Project](https://www.aem.live/developer/anatomy-of-a-project)
-3. [Web Performance](https://www.aem.live/developer/keeping-it-100)
-4. [Markup, Sections, Blocks, and Auto Blocking](https://www.aem.live/developer/markup-sections-blocks)
+---
 
-## Installation
+## What is this?
+
+Chronicle documents shipped engineering work as structured entries: each fix gets a detail page (problem → root cause → fix → testing) and an interactive Flow Explorer that traces the call path affected by the change. Entries are authored in [DA](https://da.live) and indexed automatically.
+
+---
+
+## Site structure
+
+```
+/                            ← Index page (work-catalogue block)
+/issues/<slug>               ← Issue detail pages (DA-authored)
+/tools/<project>/flows.html  ← Flow Explorer apps (code repo)
+/tools/index.html            ← Flow Explorer listing (code repo)
+/query-index.json            ← Auto-built from helix-query.yaml
+```
+
+**Content** lives in DA at `content.da.live/somarc/chronicle/`  
+**Code** (blocks, scripts, tools) lives here in this repo
+
+---
+
+## Adding a new entry
+
+### 1. Generate a draft from a PR URL
+
+```sh
+node scripts/pr-draft.js https://github.com/adobe/helix-tools-website/pull/369
+node scripts/pr-draft.js <pr-url> --out /tmp/my-slug.html
+```
+
+The script fetches the PR (and any linked issue), extracts Problem / Root Cause / Fix / Testing sections, and outputs a ready-to-review DA content HTML file. Review the `<!-- TODO -->` placeholders before publishing.
+
+### 2. Push to DA
+
+```sh
+da --org somarc --repo chronicle content put /issues/<slug>.html /tmp/<slug>.html --commit
+```
+
+**Slug convention:** `<project>-<brief-description>` — e.g. `page-status-byom`, `helix-admin-cache-ttl`
+
+### 3. Create a Flow Explorer (optional but encouraged)
+
+Create `tools/<project>/flows.html` using `tools/page-status/flows.html` as the template. Define `DATA.nodes`, `DATA.edges`, and `DATA.commands` (scenarios + steps). Commit and push — no DA pipeline needed for code files.
+
+Add a card to `tools/index.html` for the new explorer.
+
+### 4. Preview and publish
+
+```sh
+da --org somarc --repo chronicle deploy pages / --commit
+```
+
+This previews all DA pages (rebuilding `query-index.json`) and publishes to live in one step.
+
+### 5. Link back from the upstream PR
+
+Add to the PR description:
+
+```
+Interactive flow explorer: https://main--chronicle--somarc.aem.live/tools/<project>/flows.html
+```
+
+---
+
+## Blocks
+
+| Block | Location | Purpose |
+|---|---|---|
+| `work-catalogue` | `blocks/work-catalogue/` | Homepage index — Timeline / Project / Issue views, fetches `/query-index.json` |
+| `issue-context` | `blocks/issue-context/` | Issue page header — project badge, issue/PR links, date, summary, actions |
+| `related-entries` | `blocks/related-entries/` | Bottom-of-page "More from \<project\>" — add `<div class="related-entries"></div>` to any issue page |
+| `header` | `blocks/header/` | Site nav — auto-injects breadcrumbs (`project | #issue`) on `/issues/` pages |
+
+---
+
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `scripts/chronicle-nav.js` | Nav bar builder — `buildNav()` + `decorateBrowse()` |
+| `scripts/pr-draft.js` | CLI — generate DA issue page HTML from a GitHub PR URL |
+
+---
+
+## Development
 
 ```sh
 npm i
-```
-
-## Linting
-
-```sh
 npm run lint
+aem up          # local dev server at http://localhost:3000
 ```
 
-## Local development
+Flow Explorer files (`tools/*/flows.html`) are standalone HTML — open directly in a browser or via `aem up`.
 
-1. Create a new repository based on the `aem-boilerplate` template
-1. Add the [AEM Code Sync GitHub App](https://github.com/apps/aem-code-sync) to the repository
-1. Install the [AEM CLI](https://github.com/adobe/helix-cli): `npm install -g @adobe/aem-cli`
-1. Start AEM Proxy: `aem up` (opens your browser at `http://localhost:3000`)
-1. Open the `{repo}` directory in your favorite IDE and start coding :)
+---
+
+## Query index
+
+`helix-query.yaml` indexes all `/issues/**` pages. Fields: `title`, `description`, `project`, `issue-number`, `issue-url`, `pr-url`, `flows-url`, `date`. Rebuilt automatically on every `da preview` call to an `/issues/` page.
