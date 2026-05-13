@@ -143,6 +143,17 @@ export default async function decorate(block) {
 
   let entries = [];
 
+  toggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.wc-tab');
+    if (!btn) return;
+    activeView = btn.dataset.view;
+    toggle.querySelectorAll('.wc-tab').forEach((b) => {
+      b.classList.toggle('wc-tab-active', b === btn);
+      b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+    });
+    render(content, entries, activeView);
+  });
+
   try {
     const resp = await fetch(INDEX_URL);
     if (!resp.ok) throw new Error(resp.status);
@@ -154,15 +165,4 @@ export default async function decorate(block) {
   }
 
   render(content, entries, activeView);
-
-  toggle.addEventListener('click', (e) => {
-    const btn = e.target.closest('.wc-tab');
-    if (!btn) return;
-    activeView = btn.dataset.view;
-    toggle.querySelectorAll('.wc-tab').forEach((b) => {
-      b.classList.toggle('wc-tab-active', b === btn);
-      b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
-    });
-    render(content, entries, activeView);
-  });
 }

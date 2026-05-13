@@ -1,9 +1,9 @@
 function row(block, idx) {
-  return block.children[idx]?.querySelector('td')?.textContent?.trim() || '';
+  return block.children[idx]?.children[0]?.textContent?.trim() || '';
 }
 
 function link(block, idx) {
-  const a = block.children[idx]?.querySelector('td a');
+  const a = block.children[idx]?.children[0]?.querySelector('a');
   return a ? { href: a.href, text: a.textContent.trim() } : null;
 }
 
