@@ -20,6 +20,13 @@ const CSS = `
 .cn-brand:hover { background: #21262d; }
 .cn-brand svg { flex-shrink: 0; }
 .cn-sep { width: 1px; height: 16px; background: #30363d; margin: 0 10px; flex-shrink: 0; }
+.cn-nav-link {
+  font-size: 13px; font-weight: 500; color: #8b949e;
+  text-decoration: none; display: flex; align-items: center;
+  padding: 4px 8px; border-radius: 5px;
+  transition: color .15s, background .15s;
+}
+.cn-nav-link:hover { color: #e6edf3; background: #21262d; text-decoration: none; }
 .cn-slots { display: flex; align-items: center; gap: 0; flex: 1; min-width: 0; }
 .cn-browse-wrap { margin-left: auto; position: relative; flex-shrink: 0; }
 .cn-browse {
@@ -231,6 +238,14 @@ export function buildNav(target, slots = []) {
     </svg>
     chronicle`;
   wrap.append(brand);
+
+  const toolsSep = document.createElement('div');
+  toolsSep.className = 'cn-sep';
+  const toolsLink = document.createElement('a');
+  toolsLink.className = 'cn-nav-link';
+  toolsLink.href = '/tools/';
+  toolsLink.textContent = 'Explorers';
+  wrap.append(toolsSep, toolsLink);
 
   if (slots.length) {
     slots.forEach((slot) => {
