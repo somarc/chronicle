@@ -247,6 +247,14 @@ export function buildNav(target, slots = []) {
   toolsLink.textContent = 'Explorers';
   wrap.append(toolsSep, toolsLink);
 
+  const aboutSep = document.createElement('div');
+  aboutSep.className = 'cn-sep';
+  const aboutLink = document.createElement('a');
+  aboutLink.className = 'cn-nav-link';
+  aboutLink.href = '/readme';
+  aboutLink.textContent = 'About';
+  wrap.append(aboutSep, aboutLink);
+
   if (slots.length) {
     slots.forEach((slot) => {
       const sep = document.createElement('div');
