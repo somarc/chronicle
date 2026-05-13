@@ -1,0 +1,172 @@
+/* =============================================================
+   Related Entries block — Chronicle dark theme
+   Prefix: re-
+   ============================================================= */
+
+/* ── Variables (scoped to the block) ────────────────────────── */
+.block.related-entries {
+  --re-bg:       #0d1117;
+  --re-surface:  #161b22;
+  --re-border:   #30363d;
+  --re-text:     #e6edf3;
+  --re-muted:    #8b949e;
+  --re-accent:   #58a6ff;
+  --re-green:    #34d399;
+  --re-radius:   8px;
+  --re-font:     'IBM Plex Sans', system-ui, sans-serif;
+  --re-mono:     'IBM Plex Mono', monospace;
+}
+
+/* ── Section wrapper ─────────────────────────────────────────── */
+.re-section {
+  padding: 2rem 0 1rem;
+  border-top: 1px solid var(--re-border);
+  font-family: var(--re-font);
+}
+
+/* ── Heading ─────────────────────────────────────────────────── */
+.re-heading {
+  font-family: var(--re-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--re-muted);
+  margin: 0 0 1.25rem;
+}
+
+/* ── Card grid ───────────────────────────────────────────────── */
+.re-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.re-card {
+  background: var(--re-surface);
+  border: 1px solid var(--re-border);
+  border-radius: var(--re-radius);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1 1 280px;
+  max-width: 420px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.re-card:hover {
+  border-color: var(--re-accent);
+  box-shadow: 0 0 0 1px var(--re-accent);
+}
+
+/* ── Card meta row ───────────────────────────────────────────── */
+.re-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Project badge */
+.re-project {
+  font-family: var(--re-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--re-green);
+  background: color-mix(in srgb, var(--re-green) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--re-green) 30%, transparent);
+  border-radius: 20px;
+  padding: 0.15em 0.65em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+/* Date */
+.re-date {
+  font-family: var(--re-mono);
+  font-size: 0.68rem;
+  color: var(--re-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Title ───────────────────────────────────────────────────── */
+.re-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.re-title a {
+  color: var(--re-accent);
+  text-decoration: none;
+}
+
+.re-title a:hover {
+  text-decoration: underline;
+}
+
+/* ── Description ─────────────────────────────────────────────── */
+.re-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--re-muted);
+  line-height: 1.55;
+  /* 2-line clamp */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1; /* push links to bottom */
+}
+
+/* ── Links row ───────────────────────────────────────────────── */
+.re-links {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.re-link {
+  font-family: var(--re-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--re-muted);
+  text-decoration: none;
+  border: 1px solid var(--re-border);
+  border-radius: 4px;
+  padding: 0.2em 0.6em;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.re-link:hover {
+  color: var(--re-text);
+  border-color: var(--re-muted);
+}
+
+/* Flow Explorer button — slightly highlighted */
+.re-flows {
+  color: var(--re-accent);
+  border-color: color-mix(in srgb, var(--re-accent) 35%, transparent);
+}
+
+.re-flows:hover {
+  color: var(--re-accent);
+  border-color: var(--re-accent);
+  background: color-mix(in srgb, var(--re-accent) 8%, transparent);
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .re-card {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}
