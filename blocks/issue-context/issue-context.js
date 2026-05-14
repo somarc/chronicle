@@ -12,8 +12,9 @@ function render(block, data) {
     project, issueNum, issueHref, prHref, prText, flowsHref, dateStr, summary,
   } = data;
 
-  const fmtDate = dateStr
-    ? new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const [dy, dm, dd] = (dateStr || '').split('-').map(Number);
+  const fmtDate = (dy && dm && dd)
+    ? new Date(dy, dm - 1, dd).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
 
   block.innerHTML = `

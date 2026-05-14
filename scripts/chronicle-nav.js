@@ -118,8 +118,9 @@ function injectStyles() {
 
 function fmtDate(str) {
   if (!str) return '';
-  const d = new Date(str);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const [y, m, d] = str.split('-').map(Number);
+  if (!y || !m || !d) return '';
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function buildEntryEl(entry) {

@@ -1570,7 +1570,7 @@ async function loadData() {
     chronicleEntries = chronicle.status === 'fulfilled' ? chronicle.value : (chronicle || []);
 
     fetchedAt = new Date();
-    $('freshness-label').textContent = `Fetched ${fetchedAt.toLocaleTimeString()}`;
+    $('freshness-label').textContent = `Fetched ${fetchedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TZ })}`;
 
     // Assign repo colours up-front
     const repos = [...new Set(allEvents.map(e => e.repo.name))];
@@ -1603,18 +1603,20 @@ function chronicleBadge(entry) {
 }
 
 // ── Formatting helpers ────────────────────────────────────────────────────────
+const TZ = 'America/New_York';
+
 function fmtTime(iso) {
-  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TZ });
 }
 
 function fmtDate(iso) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    weekday: 'short', month: 'short', day: 'numeric',
+  return new Date(iso).toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', timeZone: TZ,
   });
 }
 
 function fmtDateShort(iso) {
-  return new Date(iso).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ });
 }
 
 function fmtRelative(iso) {
@@ -1752,7 +1754,7 @@ function renderTimeline(events) {
     }).join('');
 
     const label = el('div', 'day-label');
-    label.innerHTML = `${fmtDate(day + 'T00:00:00Z')} <span class="day-count">${dayEvents.length}</span><div class="day-summary">${summaryHtml}</div><span class="day-toggle">▾</span>`;
+    label.innerHTML = `${fmtDate(day + 'T12:00:00')} <span class="day-count">${dayEvents.length}</span><div class="day-summary">${summaryHtml}</div><span class="day-toggle">▾</span>`;
     label.addEventListener('click', () => group.classList.toggle('collapsed'));
     group.appendChild(label);
 
@@ -1803,7 +1805,7 @@ function renderTimeline(events) {
         const pct = daySpan > 1 ? ((t - dayMin) / daySpan) * 92 + 4 : 50; // 4–96% range
         const dot = el('div', 'lane-dot');
         dot.style.cssText = `left:${pct.toFixed(1)}%;background:${colour};`;
-        dot.title = new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        dot.title = new Date(t).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TZ });
         barDiv.appendChild(dot);
       });
 
@@ -2002,7 +2004,7 @@ function buildRepoSection(repoName, events, startOpen) {
         ? `<span style="color:var(--muted);font-size:11px;margin-left:8px">${escHtml(e.payload.pull_request.title || '')}</span>` : '';
       row.innerHTML = `
         ${evIcon(e.type)}
-        <span class="repo-ev-time">${new Date(e.created_at).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} ${fmtTime(e.created_at)}</span>
+        <span class="repo-ev-time">${new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ })} ${fmtTime(e.created_at)}</span>
         <span class="repo-ev-branch">${escHtml(branch)}</span>
         ${prTitle}
       `;

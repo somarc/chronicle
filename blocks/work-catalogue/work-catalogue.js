@@ -3,10 +3,15 @@ const ISSUES_PREFIX = '/issues/';
 const VIEWS = ['timeline', 'project', 'issue'];
 const HASH_KEY = 'view';
 
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return (y && m && d) ? new Date(y, m - 1, d) : null;
+}
+
 function fmt(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return dateStr;
+  const d = parseDate(dateStr);
+  if (!d) return dateStr || '';
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
@@ -52,11 +57,10 @@ function entryCard(entry) {
 }
 
 function renderTimeline(entries) {
-  const sorted = [...entries].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  const sorted = [...entries].sort((a, b) => (parseDate(b.date) || 0) - (parseDate(a.date) || 0));
   const byMonth = groupBy(sorted, (e) => {
-    if (!e.date) return 'Undated';
-    const d = new Date(e.date);
-    return Number.isNaN(d.getTime()) ? 'Undated' : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+    const d = parseDate(e.date);
+    return d ? d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'Undated';
   });
 
   const frag = document.createDocumentFragment();
