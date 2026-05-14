@@ -300,15 +300,23 @@ export function buildNav(target, slots = []) {
   const path = window.location.pathname;
   [
     {
-      text: 'Explorers', href: '/tools/index.html', icon: NAV_ICONS.explore,
-      match: '/tools/', exclude: '/tools/log',
+      text: 'Explorers',
+      href: '/tools/index.html',
+      icon: NAV_ICONS.explore,
+      match: '/tools/',
+      exclude: '/tools/log',
     },
     {
-      text: 'Log', href: '/tools/log/index.html', icon: NAV_ICONS.log,
+      text: 'Log',
+      href: '/tools/log/index.html',
+      icon: NAV_ICONS.log,
       match: '/tools/log',
     },
     {
-      text: 'About', href: '/readme', icon: null, match: '/readme',
+      text: 'About',
+      href: '/readme',
+      icon: null,
+      match: '/readme',
     },
   ].forEach(({
     text, href, icon, match, exclude,
