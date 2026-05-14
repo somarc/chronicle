@@ -21,12 +21,23 @@ const CSS = `
 .cn-brand img { flex-shrink: 0; width: 20px; height: 20px; object-fit: cover; border-radius: 3px; }
 .cn-sep { width: 1px; height: 16px; background: #30363d; margin: 0 10px; flex-shrink: 0; }
 .cn-nav-link {
-  font-size: 13px; font-weight: 500; color: #8b949e;
-  text-decoration: none; display: flex; align-items: center;
+  font-size: 12px; font-weight: 500; color: #8b949e;
+  text-decoration: none; display: flex; align-items: center; gap: 5px;
   padding: 4px 8px; border-radius: 5px;
   transition: color .15s, background .15s;
 }
 .cn-nav-link:hover { color: #e6edf3; background: #21262d; text-decoration: none; }
+.cn-nav-link svg { flex-shrink: 0; opacity: 0.6; }
+.cn-nav-current {
+  font-size: 13px; font-weight: 600; color: #e6edf3;
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 8px;
+}
+.cn-nav-current svg { flex-shrink: 0; opacity: 0.5; }
+.cn-nav-badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  color: #484f58; padding: 0 4px;
+}
 .cn-browse-wrap { margin-left: auto; position: relative; flex-shrink: 0; }
 .cn-browse {
   display: flex; align-items: center; gap: 5px;
@@ -222,6 +233,53 @@ export function decorateBrowse(navEl) {
  * @param {HTMLElement} target - element to render into
  * @param {HTMLElement[]} [slots] - optional extra nav items (e.g. breadcrumbs for tool pages)
  */
+// SVG icons for nav slots
+const NAV_ICONS = {
+  issue: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>`,
+  branch: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 3v12M18 9l-6-6-6 6M18 21V9"/></svg>`,
+  pr: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 012 2v7M6 9v12"/></svg>`,
+  page: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>`,
+  log: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
+  explore: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>`,
+};
+
+/**
+ * Build a nav slot element from a descriptor object or pass through a raw element.
+ * Descriptor shape: { label, href?, icon?, current?, subtitle?, target? }
+ *   - current: renders as bold white terminus (no hover, not a link)
+ *   - icon: key from NAV_ICONS or raw SVG string
+ *   - subtitle: grey badge text appended after the label
+ */
+function buildSlot(slot) {
+  if (slot instanceof Element) return slot;
+
+  const {
+    label, href, icon, current, subtitle, target: tgt,
+  } = slot;
+
+  const iconHtml = icon ? (NAV_ICONS[icon] || icon) : '';
+
+  if (current) {
+    const el = document.createElement('span');
+    el.className = 'cn-nav-current';
+    el.innerHTML = `${iconHtml}${label}`;
+    if (subtitle) {
+      const badge = document.createElement('span');
+      badge.className = 'cn-nav-badge';
+      badge.textContent = subtitle;
+      el.append(badge);
+    }
+    return el;
+  }
+
+  const el = document.createElement('a');
+  el.className = 'cn-nav-link';
+  el.href = href || '#';
+  if (tgt) { el.target = tgt; el.rel = 'noopener'; }
+  el.innerHTML = `${iconHtml}${label}`;
+  return el;
+}
+
 export function buildNav(target, slots = []) {
   injectStyles();
 
@@ -231,42 +289,28 @@ export function buildNav(target, slots = []) {
   const brand = document.createElement('a');
   brand.className = 'cn-brand';
   brand.href = '/';
-  brand.innerHTML = `
-    <img src="/logo.jpg" alt="Chronicle" width="20" height="20"/>
-    chronicle`;
+  brand.innerHTML = `<img src="/logo.jpg" alt="Chronicle" width="20" height="20"/>chronicle`;
   wrap.append(brand);
 
-  const toolsSep = document.createElement('div');
-  toolsSep.className = 'cn-sep';
-  const toolsLink = document.createElement('a');
-  toolsLink.className = 'cn-nav-link';
-  toolsLink.href = '/tools/index.html';
-  toolsLink.textContent = 'Explorers';
-  wrap.append(toolsSep, toolsLink);
+  [
+    { text: 'Explorers', href: '/tools/index.html', icon: NAV_ICONS.explore },
+    { text: 'Log', href: '/tools/log/index.html', icon: NAV_ICONS.log },
+    { text: 'About', href: '/readme', icon: null },
+  ].forEach(({ text, href, icon }) => {
+    const sep = document.createElement('div');
+    sep.className = 'cn-sep';
+    const link = document.createElement('a');
+    link.className = 'cn-nav-link';
+    link.href = href;
+    link.innerHTML = `${icon || ''}${text}`;
+    wrap.append(sep, link);
+  });
 
-  const logSep = document.createElement('div');
-  logSep.className = 'cn-sep';
-  const logLink = document.createElement('a');
-  logLink.className = 'cn-nav-link';
-  logLink.href = '/tools/log/index.html';
-  logLink.textContent = 'Log';
-  wrap.append(logSep, logLink);
-
-  const aboutSep = document.createElement('div');
-  aboutSep.className = 'cn-sep';
-  const aboutLink = document.createElement('a');
-  aboutLink.className = 'cn-nav-link';
-  aboutLink.href = '/readme';
-  aboutLink.textContent = 'About';
-  wrap.append(aboutSep, aboutLink);
-
-  if (slots.length) {
-    slots.forEach((slot) => {
-      const sep = document.createElement('div');
-      sep.className = 'cn-sep';
-      wrap.append(sep, slot);
-    });
-  }
+  slots.forEach((slot) => {
+    const sep = document.createElement('div');
+    sep.className = 'cn-sep';
+    wrap.append(sep, buildSlot(slot));
+  });
 
   target.innerHTML = '';
   target.append(wrap);
