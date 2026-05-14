@@ -96,6 +96,16 @@ const CSS = `
 }
 .cn-entry-date { font-size: 10px; color: #484f58; margin-left: auto; }
 .cn-empty { padding: 16px 14px; font-size: 12px; color: #484f58; text-align: center; }
+@media (max-width: 599px) {
+  .cn-brand-label { display: none; }
+  .cn-link-label { display: none; }
+  .cn-browse-label { display: none; }
+  .cn-sep { margin: 0 3px; }
+  .cn-nav-link { padding: 4px 6px; }
+  .cn-nav-link svg { opacity: 1; }
+  .cn-browse { padding: 4px 8px; gap: 0; }
+  .cn-popover { width: calc(100vw - 24px); right: -12px; }
+}
 `;
 
 function injectStyles() {
@@ -161,7 +171,7 @@ export function decorateBrowse(navEl) {
   btn.className = 'cn-browse';
   btn.setAttribute('aria-expanded', 'false');
   btn.setAttribute('aria-haspopup', 'listbox');
-  btn.innerHTML = `Browse
+  btn.innerHTML = `<span class="cn-browse-label">Browse</span>
     <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <path d="M6 9l6 6 6-6"/>
     </svg>`;
@@ -295,7 +305,7 @@ export function buildNav(target, slots = []) {
   const brand = document.createElement('a');
   brand.className = 'cn-brand';
   brand.href = '/';
-  brand.innerHTML = `${LOGO_SVG}chronicle`;
+  brand.innerHTML = `${LOGO_SVG}<span class="cn-brand-label">chronicle</span>`;
   wrap.append(brand);
 
   const path = window.location.pathname;
@@ -316,7 +326,7 @@ export function buildNav(target, slots = []) {
     {
       text: 'About',
       href: '/readme',
-      icon: null,
+      icon: NAV_ICONS.page,
       match: '/readme',
     },
   ].forEach(({
@@ -328,7 +338,7 @@ export function buildNav(target, slots = []) {
     const link = document.createElement('a');
     link.className = isActive ? 'cn-nav-link cn-nav-link--active' : 'cn-nav-link';
     link.href = href;
-    link.innerHTML = `${icon || ''}${text}`;
+    link.innerHTML = `${icon || ''}<span class="cn-link-label">${text}</span>`;
     wrap.append(sep, link);
   });
 
