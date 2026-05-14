@@ -10,28 +10,25 @@ function buildBreadcrumbSlots() {
 
   const slots = [];
 
-  const projectLink = document.createElement('a');
-  projectLink.className = 'cn-nav-link';
-  projectLink.href = '/#view=project';
-  projectLink.textContent = project;
-  slots.push(projectLink);
+  // Project — links to homepage filtered to that project
+  slots.push({ label: project, href: '/#view=project' });
 
+  // Issue number — links to GitHub issue, renders as current terminus
   const issueNumber = getMeta('issue-number');
   if (issueNumber) {
     const issueUrl = getMeta('issue-url');
-    const issueEl = issueUrl
-      ? Object.assign(document.createElement('a'), {
-        className: 'cn-nav-link',
-        href: issueUrl,
-        target: '_blank',
-        rel: 'noopener noreferrer',
-        textContent: `#${issueNumber}`,
-      })
-      : Object.assign(document.createElement('span'), {
-        className: 'cn-nav-link',
-        textContent: `#${issueNumber}`,
-      });
-    slots.push(issueEl);
+    slots.push({
+      label: `#${issueNumber}`,
+      href: issueUrl || null,
+      icon: 'issue',
+      target: '_blank',
+      current: !issueUrl ? false : true,
+    });
+  } else {
+    // No issue number — the page title is the terminus
+    const title = getMeta('og:title') || document.title || '';
+    const cleanTitle = title.replace(/\s*—\s*Chronicle\s*$/, '');
+    if (cleanTitle) slots.push({ label: cleanTitle, icon: 'page', current: true });
   }
 
   return slots;
