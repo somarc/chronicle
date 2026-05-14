@@ -27,7 +27,6 @@ const CSS = `
   transition: color .15s, background .15s;
 }
 .cn-nav-link:hover { color: #e6edf3; background: #21262d; text-decoration: none; }
-.cn-slots { display: flex; align-items: center; gap: 0; flex: 1; min-width: 0; }
 .cn-browse-wrap { margin-left: auto; position: relative; flex-shrink: 0; }
 .cn-browse {
   display: flex; align-items: center; gap: 5px;
@@ -268,10 +267,6 @@ export function buildNav(target, slots = []) {
       wrap.append(sep, slot);
     });
   }
-
-  const slotsWrap = document.createElement('div');
-  slotsWrap.className = 'cn-slots';
-  wrap.append(slotsWrap);
 
   target.innerHTML = '';
   target.append(wrap);
