@@ -3,6 +3,7 @@ const ISSUES_PREFIX = '/issues/';
 
 const CSS = `
 .cn-wrap {
+  width: 100%; box-sizing: border-box;
   height: 44px; min-height: 44px;
   background: #161b22;
   border-bottom: 1px solid #30363d;
@@ -27,6 +28,7 @@ const CSS = `
   transition: color .15s, background .15s;
 }
 .cn-nav-link:hover { color: #e6edf3; background: #21262d; text-decoration: none; }
+.cn-nav-link--active { color: #e6edf3 !important; font-weight: 600; }
 .cn-nav-link svg { flex-shrink: 0; opacity: 0.6; }
 .cn-nav-current {
   font-size: 13px; font-weight: 600; color: #e6edf3;
@@ -295,15 +297,17 @@ export function buildNav(target, slots = []) {
   brand.innerHTML = `<img src="/logo.jpg" alt="Chronicle" width="20" height="20"/>chronicle`;
   wrap.append(brand);
 
+  const path = window.location.pathname;
   [
-    { text: 'Explorers', href: '/tools/index.html', icon: NAV_ICONS.explore },
-    { text: 'Log', href: '/tools/log/index.html', icon: NAV_ICONS.log },
-    { text: 'About', href: '/readme', icon: null },
-  ].forEach(({ text, href, icon }) => {
+    { text: 'Explorers', href: '/tools/index.html', icon: NAV_ICONS.explore, match: '/tools/', exclude: '/tools/log' },
+    { text: 'Log', href: '/tools/log/index.html', icon: NAV_ICONS.log, match: '/tools/log' },
+    { text: 'About', href: '/readme', icon: null, match: '/readme' },
+  ].forEach(({ text, href, icon, match, exclude }) => {
     const sep = document.createElement('div');
     sep.className = 'cn-sep';
+    const isActive = path.startsWith(match) && !(exclude && path.startsWith(exclude));
     const link = document.createElement('a');
-    link.className = 'cn-nav-link';
+    link.className = isActive ? 'cn-nav-link cn-nav-link--active' : 'cn-nav-link';
     link.href = href;
     link.innerHTML = `${icon || ''}${text}`;
     wrap.append(sep, link);
