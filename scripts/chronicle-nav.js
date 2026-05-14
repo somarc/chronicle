@@ -12,8 +12,8 @@ const CSS = `
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
 }
 .cn-brand {
-  font-size: 13px; font-weight: 700; color: #e6edf3;
-  text-decoration: none; letter-spacing: 0.02em;
+  font-size: 13px; font-weight: 700; color: #e6edf3 !important;
+  text-decoration: none !important; letter-spacing: 0.02em;
   display: flex; align-items: center; gap: 6px;
   padding: 4px 8px; border-radius: 5px;
   transition: background .15s;
@@ -22,12 +22,12 @@ const CSS = `
 .cn-brand img { flex-shrink: 0; width: 20px; height: 20px; object-fit: cover; border-radius: 3px; }
 .cn-sep { width: 1px; height: 16px; background: #30363d; margin: 0 10px; flex-shrink: 0; }
 .cn-nav-link {
-  font-size: 12px; font-weight: 500; color: #8b949e;
-  text-decoration: none; display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500; color: #8b949e !important;
+  text-decoration: none !important; display: flex; align-items: center; gap: 5px;
   padding: 4px 8px; border-radius: 5px;
   transition: color .15s, background .15s;
 }
-.cn-nav-link:hover { color: #e6edf3; background: #21262d; text-decoration: none; }
+.cn-nav-link:hover { color: #e6edf3 !important; background: #21262d; text-decoration: none; }
 .cn-nav-link--active { color: #e6edf3 !important; font-weight: 600; }
 .cn-nav-link svg { flex-shrink: 0; opacity: 0.6; }
 .cn-nav-current {
