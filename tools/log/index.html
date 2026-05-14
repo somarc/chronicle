@@ -1436,14 +1436,7 @@ html, body {
 <script type="module">
 import { buildNav, decorateBrowse } from '/scripts/chronicle-nav.js';
 const nav = document.getElementById('site-nav');
-buildNav(nav, [
-  (() => {
-    const s = document.createElement('span');
-    s.style.cssText = 'font-size:13px;font-weight:600;color:#e6edf3;padding:4px 8px';
-    s.textContent = 'Log';
-    return s;
-  })(),
-]);
+buildNav(nav);
 </script>
 
 <script type="module">
