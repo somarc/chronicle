@@ -19,7 +19,7 @@ const CSS = `
   transition: background .15s;
 }
 .cn-brand:hover { background: #21262d; }
-.cn-brand img { flex-shrink: 0; width: 20px; height: 20px; object-fit: cover; border-radius: 3px; }
+.cn-brand svg { flex-shrink: 0; }
 .cn-sep { width: 1px; height: 16px; background: #30363d; margin: 0 10px; flex-shrink: 0; }
 .cn-nav-link {
   font-size: 12px; font-weight: 500; color: #8b949e !important;
@@ -235,8 +235,10 @@ export function decorateBrowse(navEl) {
  * @param {HTMLElement} target - element to render into
  * @param {HTMLElement[]} [slots] - optional extra nav items (e.g. breadcrumbs for tool pages)
  */
-// SVG icons for nav slots — eslint-disable-next-line needed for HTML attribute double quotes
+// Inline SVG mark and nav slot icons — eslint-disable needed for HTML attribute double quotes
 /* eslint-disable quotes */
+const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><defs><marker id="cn-ah" orient="auto" markerUnits="userSpaceOnUse" markerWidth="3.5" markerHeight="3" refX="3.5" refY="1.5"><path d="M0,0 L3.5,1.5 L0,3 Z" fill="#58a6ff"/></marker></defs><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.2" fill="none" stroke="#58a6ff" stroke-width="0.8"/><polyline points="7,4.25 18,4.25 2,15.75 13,15.75" fill="none" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#cn-ah)"/><rect x="13" y="13" width="5.5" height="5.5" rx="1.2" fill="#58a6ff" fill-opacity="0.15" stroke="#58a6ff" stroke-width="0.8"/></svg>`;
+
 const NAV_ICONS = {
   issue: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>`,
   branch: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 3v12M18 9l-6-6-6 6M18 21V9"/></svg>`,
@@ -293,8 +295,7 @@ export function buildNav(target, slots = []) {
   const brand = document.createElement('a');
   brand.className = 'cn-brand';
   brand.href = '/';
-  // eslint-disable-next-line quotes
-  brand.innerHTML = `<img src="/logo.jpg" alt="Chronicle" width="20" height="20"/>chronicle`;
+  brand.innerHTML = `${LOGO_SVG}chronicle`;
   wrap.append(brand);
 
   const path = window.location.pathname;
