@@ -125,24 +125,11 @@ svg#dg{display:block;width:100%;height:100%}
 <div id="site-nav"></div>
 <script type="module">
   import { buildNav } from '/scripts/chronicle-nav.js';
-  const nav = document.getElementById('site-nav');
-  const issueSlot = Object.assign(document.createElement('a'), {
-    className: 'cn-nav-link',
-    href: 'https://github.com/adobe/helix-tools-website/issues/340',
-    target: '_blank',
-    rel: 'noopener',
-    textContent: 'Issue #340',
-  });
-  const branchSlot = Object.assign(document.createElement('a'), {
-    className: 'cn-nav-link',
-    href: 'https://github.com/adobe/helix-tools-website/tree/fix/page-status-byom-no-source',
-    target: '_blank',
-    rel: 'noopener',
-    textContent: 'fix/page-status-byom-no-source',
-  });
-  branchSlot.style.fontFamily = 'IBM Plex Mono, monospace';
-  branchSlot.style.fontSize = '11px';
-  buildNav(nav, [issueSlot, branchSlot]);
+  buildNav(document.getElementById('site-nav'), [
+    { label: 'Issue #340', href: 'https://github.com/adobe/helix-tools-website/issues/340', icon: 'issue', target: '_blank' },
+    { label: 'fix/page-status-byom-no-source', href: 'https://github.com/adobe/helix-tools-website/tree/fix/page-status-byom-no-source', icon: 'branch', target: '_blank' },
+    { label: 'Classification Flow Explorer', icon: 'page', current: true, subtitle: 'page-status · fix #340 · BYOM sourceLastModified' },
+  ]);
 </script>
 
 <div id="workspace">
