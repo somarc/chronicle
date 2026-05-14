@@ -11,35 +11,6 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:#0d1117;color:#e6edf3;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-#site-nav{
-  height:42px;min-height:42px;
-  background:#161b22;
-  border-bottom:1px solid #30363d;
-  display:flex;align-items:center;
-  padding:0 20px;gap:0;flex-shrink:0;z-index:10;
-}
-#site-nav a{
-  font-size:12px;font-weight:500;color:#8b949e;text-decoration:none;
-  display:flex;align-items:center;gap:6px;
-  padding:4px 8px;border-radius:5px;
-  transition:color .15s,background .15s;
-}
-#site-nav a:hover{color:#c9d1d9;background:#21262d}
-#site-nav a svg{flex-shrink:0}
-#site-nav .sep{width:1px;height:16px;background:#30363d;margin:0 10px}
-#site-nav .page-title{font-size:13px;font-weight:600;color:#e6edf3}
-#site-nav .badge{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:10px;color:#484f58;
-}
-#cn-browse-anchor{margin-left:auto;display:flex;align-items:center;}
-#site-nav .issue-badge{
-  font-family:'IBM Plex Mono',monospace;font-size:10px;
-  background:#1c2840;color:#58a6ff;
-  padding:2px 7px;border-radius:4px;border:1px solid #1f4e79;
-  text-decoration:none;
-}
-#site-nav .issue-badge:hover{background:#1f4e79;color:#a5c8ff}
 
 #workspace{flex:1;display:flex;overflow:hidden;min-height:0}
 
@@ -151,24 +122,27 @@ svg#dg{display:block;width:100%;height:100%}
 </head>
 <body>
 
-<nav id="site-nav">
-  <a href="/">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-    chronicle
-  </a>
-  <div class="sep"></div>
-  <a href="https://github.com/adobe/helix-tools-website/pull/329">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-    PR #329
-  </a>
-  <div class="sep"></div>
-  <span class="page-title">Flow Explorer</span>
-  <span class="badge">&nbsp;·&nbsp;user-admin · PR #329 · admin client migration</span>
-  <div id="cn-browse-anchor" style="margin-left:auto;display:flex;align-items:center;"></div>
-</nav>
+<div id="site-nav"></div>
 <script type="module">
-  import { decorateBrowse } from '/scripts/chronicle-nav.js';
-  decorateBrowse(document.getElementById('cn-browse-anchor'));
+  import { buildNav } from '/scripts/chronicle-nav.js';
+  const nav = document.getElementById('site-nav');
+  const issueSlot = Object.assign(document.createElement('a'), {
+    className: 'cn-nav-link',
+    href: 'https://github.com/adobe/helix-tools-website/pull/329',
+    target: '_blank',
+    rel: 'noopener',
+    textContent: 'PR #329',
+  });
+  const branchSlot = Object.assign(document.createElement('a'), {
+    className: 'cn-nav-link',
+    href: 'https://github.com/adobe/helix-tools-website/tree/feat/user-admin-admin-client',
+    target: '_blank',
+    rel: 'noopener',
+    textContent: 'user-admin · admin client',
+  });
+  branchSlot.style.fontFamily = 'IBM Plex Mono, monospace';
+  branchSlot.style.fontSize = '11px';
+  buildNav(nav, [issueSlot, branchSlot]);
 </script>
 
 <div id="workspace">
