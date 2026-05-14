@@ -125,24 +125,11 @@ svg#dg{display:block;width:100%;height:100%}
 <div id="site-nav"></div>
 <script type="module">
   import { buildNav } from '/scripts/chronicle-nav.js';
-  const nav = document.getElementById('site-nav');
-  const issueSlot = Object.assign(document.createElement('a'), {
-    className: 'cn-nav-link',
-    href: 'https://github.com/adobe/helix-tools-website/pull/329',
-    target: '_blank',
-    rel: 'noopener',
-    textContent: 'PR #329',
-  });
-  const branchSlot = Object.assign(document.createElement('a'), {
-    className: 'cn-nav-link',
-    href: 'https://github.com/adobe/helix-tools-website/tree/feat/user-admin-admin-client',
-    target: '_blank',
-    rel: 'noopener',
-    textContent: 'user-admin · admin client',
-  });
-  branchSlot.style.fontFamily = 'IBM Plex Mono, monospace';
-  branchSlot.style.fontSize = '11px';
-  buildNav(nav, [issueSlot, branchSlot]);
+  buildNav(document.getElementById('site-nav'), [
+    { label: 'PR #329', href: 'https://github.com/adobe/helix-tools-website/pull/329', icon: 'pr', target: '_blank' },
+    { label: 'user-admin · admin client', href: 'https://github.com/adobe/helix-tools-website/tree/feat/user-admin-admin-client', icon: 'branch', target: '_blank' },
+    { label: 'Flow Explorer', icon: 'page', current: true, subtitle: 'user-admin · PR #329 · admin client migration' },
+  ]);
 </script>
 
 <div id="workspace">
