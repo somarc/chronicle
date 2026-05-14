@@ -233,7 +233,8 @@ export function decorateBrowse(navEl) {
  * @param {HTMLElement} target - element to render into
  * @param {HTMLElement[]} [slots] - optional extra nav items (e.g. breadcrumbs for tool pages)
  */
-// SVG icons for nav slots
+// SVG icons for nav slots — eslint-disable-next-line needed for HTML attribute double quotes
+/* eslint-disable quotes */
 const NAV_ICONS = {
   issue: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>`,
   branch: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 3v12M18 9l-6-6-6 6M18 21V9"/></svg>`,
@@ -242,6 +243,7 @@ const NAV_ICONS = {
   log: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
   explore: `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>`,
 };
+/* eslint-enable quotes */
 
 /**
  * Build a nav slot element from a descriptor object or pass through a raw element.
@@ -289,6 +291,7 @@ export function buildNav(target, slots = []) {
   const brand = document.createElement('a');
   brand.className = 'cn-brand';
   brand.href = '/';
+  // eslint-disable-next-line quotes
   brand.innerHTML = `<img src="/logo.jpg" alt="Chronicle" width="20" height="20"/>chronicle`;
   wrap.append(brand);
 
