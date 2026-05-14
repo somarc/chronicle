@@ -125,24 +125,11 @@ svg#dg{display:block;width:100%;height:100%}
 <div id="site-nav"></div>
 <script type="module">
   import { buildNav } from '/scripts/chronicle-nav.js';
-  const nav = document.getElementById('site-nav');
-  const issueSlot = Object.assign(document.createElement('a'), {
-    className: 'cn-nav-link',
-    href: 'https://github.com/adobe/helix-tools-website/pull/289',
-    target: '_blank',
-    rel: 'noopener',
-    textContent: 'PR #289',
-  });
-  const branchSlot = Object.assign(document.createElement('a'), {
-    className: 'cn-nav-link',
-    href: 'https://github.com/adobe/helix-tools-website/tree/feat/helix-header-lab-meta',
-    target: '_blank',
-    rel: 'noopener',
-    textContent: 'helix-header · lab meta',
-  });
-  branchSlot.style.fontFamily = 'IBM Plex Mono, monospace';
-  branchSlot.style.fontSize = '11px';
-  buildNav(nav, [issueSlot, branchSlot]);
+  buildNav(document.getElementById('site-nav'), [
+    { label: 'PR #289', href: 'https://github.com/adobe/helix-tools-website/pull/289', icon: 'pr', target: '_blank' },
+    { label: 'helix-header · lab meta', href: 'https://github.com/adobe/helix-tools-website/tree/feat/helix-header-lab-meta', icon: 'branch', target: '_blank' },
+    { label: 'Flow Explorer', icon: 'page', current: true, subtitle: 'helix-header · PR #289 · experimental lab metadata' },
+  ]);
 </script>
 
 <div id="workspace">
