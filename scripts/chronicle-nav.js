@@ -18,7 +18,7 @@ const CSS = `
   transition: background .15s;
 }
 .cn-brand:hover { background: #21262d; }
-.cn-brand svg { flex-shrink: 0; }
+.cn-brand img { flex-shrink: 0; width: 20px; height: 20px; object-fit: cover; border-radius: 3px; }
 .cn-sep { width: 1px; height: 16px; background: #30363d; margin: 0 10px; flex-shrink: 0; }
 .cn-nav-link {
   font-size: 13px; font-weight: 500; color: #8b949e;
@@ -233,9 +233,7 @@ export function buildNav(target, slots = []) {
   brand.className = 'cn-brand';
   brand.href = '/';
   brand.innerHTML = `
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-    </svg>
+    <img src="/logo.jpg" alt="Chronicle" width="20" height="20"/>
     chronicle`;
   wrap.append(brand);
 
