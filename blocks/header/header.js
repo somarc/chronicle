@@ -22,7 +22,7 @@ function buildBreadcrumbSlots() {
       href: issueUrl || null,
       icon: 'issue',
       target: '_blank',
-      current: !issueUrl ? false : true,
+      current: !!issueUrl,
     });
   } else {
     // No issue number — the page title is the terminus
