@@ -11,6 +11,7 @@
 
   display: grid;
   gap: 18px;
+  margin-block: 18px 34px;
 }
 
 .site-library .sl-summary {
@@ -169,7 +170,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .site-library .sl-card:first-child {
+  .site-library .sl-grid-many .sl-card:first-child {
     grid-column: span 2;
   }
 }

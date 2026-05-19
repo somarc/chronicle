@@ -65,6 +65,17 @@ function makeCard(row, index) {
   return article;
 }
 
+function groupLabel(block) {
+  let sibling = block.previousElementSibling;
+  while (sibling) {
+    if (/^H[2-4]$/i.test(sibling.tagName)) {
+      return sibling.textContent.trim();
+    }
+    sibling = sibling.previousElementSibling;
+  }
+  return 'Somarc Edge Delivery catalogue';
+}
+
 export default function decorate(block) {
   const rows = [...block.children].filter((row) => row.children.length);
   const cards = rows.map(makeCard);
@@ -73,11 +84,11 @@ export default function decorate(block) {
   summary.className = 'sl-summary';
   summary.innerHTML = `
     <span>${cards.length} sites</span>
-    <span>Somarc Edge Delivery catalogue</span>
+    <span>${groupLabel(block)}</span>
   `;
 
   const grid = document.createElement('div');
-  grid.className = 'sl-grid';
+  grid.className = cards.length > 3 ? 'sl-grid sl-grid-many' : 'sl-grid';
   cards.forEach((card) => grid.append(card));
 
   block.replaceChildren(summary, grid);
