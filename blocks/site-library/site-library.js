@@ -66,10 +66,14 @@ function makeCard(row, index) {
 }
 
 function groupLabel(block) {
-  let sibling = block.previousElementSibling;
+  let sibling = (block.closest('.site-library-wrapper') || block).previousElementSibling;
   while (sibling) {
     if (/^H[2-4]$/i.test(sibling.tagName)) {
       return sibling.textContent.trim();
+    }
+    const headings = sibling.querySelectorAll?.('h2, h3, h4');
+    if (headings?.length) {
+      return headings[headings.length - 1].textContent.trim();
     }
     sibling = sibling.previousElementSibling;
   }
