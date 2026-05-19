@@ -312,6 +312,12 @@ export function buildNav(target, slots = []) {
   const path = window.location.pathname;
   [
     {
+      text: 'Sites',
+      href: '/sites',
+      icon: NAV_ICONS.page,
+      match: '/sites',
+    },
+    {
       text: 'Explorers',
       href: '/tools/index.html',
       icon: NAV_ICONS.explore,
