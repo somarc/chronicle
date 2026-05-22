@@ -29,7 +29,10 @@ function render(block, data) {
         ${flowsHref ? `<a class="ic-btn ic-btn-primary" href="${flowsHref}">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
           Flow Explorer
-        </a>` : ''}
+        </a>` : `<span class="ic-btn ic-btn-disabled" aria-disabled="true">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>
+          No Flow Explorer
+        </span>`}
         ${prHref ? `<a class="ic-btn" href="${prHref}" target="_blank" rel="noopener">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 012 2v7M6 9v12"/></svg>
           ${prText || 'Pull Request'}
