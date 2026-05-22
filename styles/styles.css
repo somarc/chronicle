@@ -353,6 +353,42 @@ main:has(#about-chronicle) .button-wrapper {
   margin-top: 24px;
 }
 
+main:has(#about-chronicle) > .section:first-of-type p:nth-of-type(2) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+main:has(#about-chronicle) > .section:first-of-type p:nth-of-type(2) a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  padding: 0 18px;
+  font-size: var(--body-font-size-s);
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  background: var(--accent-bg);
+  color: var(--link-color);
+}
+
+main:has(#about-chronicle) > .section:first-of-type p:nth-of-type(2) em a {
+  border-color: var(--dark-color);
+  background: transparent;
+  color: var(--muted-color);
+}
+
+main:has(#about-chronicle) > .section:first-of-type p:nth-of-type(2) a:hover,
+main:has(#about-chronicle) > .section:first-of-type p:nth-of-type(2) a:focus-visible {
+  border-color: var(--link-color);
+  color: var(--link-hover-color);
+  text-decoration: none;
+}
+
 main > .section > .readme-hero p:nth-of-type(2) {
   display: flex;
   flex-wrap: wrap;
