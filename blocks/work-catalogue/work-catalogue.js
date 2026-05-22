@@ -15,6 +15,12 @@ function fmt(dateStr) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function cleanTitle(title) {
+  return (title || 'Untitled')
+    .replace(/\s*—\s*Chronicle(?:Chronicle)+\s*$/i, '')
+    .replace(/\s*—\s*Chronicle\s*$/i, '');
+}
+
 function groupBy(items, keyFn) {
   const fn = typeof keyFn === 'function' ? keyFn : (item) => item[keyFn] || 'Other';
   return items.reduce((acc, item) => {
@@ -46,7 +52,7 @@ function entryCard(entry) {
       ${entry['issue-number'] ? `<a class="wc-issue-badge" href="${entry['issue-url'] || '#'}" target="_blank" rel="noopener">#${entry['issue-number']}</a>` : ''}
       ${entry.date ? `<span class="wc-date">${fmt(entry.date)}</span>` : ''}
     </div>
-    <a class="wc-title" href="${entry.path}">${entry.title || 'Untitled'}</a>
+    <a class="wc-title" href="${entry.path}">${cleanTitle(entry.title)}</a>
     ${entry.description ? `<p class="wc-desc">${entry.description}</p>` : ''}
     <div class="wc-links">
       ${entry['flows-url'] ? `<a class="wc-link wc-flows" href="${entry['flows-url']}">Flow Explorer →</a>` : '<span class="wc-link wc-link-disabled" aria-disabled="true">No Flow Explorer</span>'}
