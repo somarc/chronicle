@@ -14,17 +14,69 @@ function hostLabel(url) {
   }
 }
 
+function linkOrTextFrom(cell) {
+  const link = cell?.querySelector?.('a[href]');
+  return link?.href || textFrom(cell);
+}
+
+function wireVideoPreview(card, video) {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const play = () => {
+    if (reduceMotion.matches) return;
+    card.classList.add('sl-card-active');
+    video.play().catch(() => {});
+  };
+
+  const stop = () => {
+    card.classList.remove('sl-card-active');
+    video.pause();
+    try {
+      video.currentTime = 0;
+    } catch {
+      // Some browsers reject seeking before video metadata is available.
+    }
+  };
+
+  card.addEventListener('pointerenter', play);
+  card.addEventListener('pointerleave', stop);
+  card.addEventListener('focusin', play);
+  card.addEventListener('focusout', (event) => {
+    if (!card.contains(event.relatedTarget)) stop();
+  });
+}
+
 function makeCard(row, index) {
   const cells = [...row.children];
-  const [titleCell, urlCell, descCell, dateCell] = cells;
+  const [titleCell, urlCell, descCell, dateCell, mediaCell] = cells;
   const title = textFrom(titleCell) || 'Untitled site';
-  const url = textFrom(urlCell);
+  const url = linkOrTextFrom(urlCell);
   const description = textFrom(descCell);
   const date = cleanDate(textFrom(dateCell));
+  const mediaUrl = linkOrTextFrom(mediaCell);
 
   const article = document.createElement('article');
   article.className = 'sl-card';
   article.style.setProperty('--sl-index', `${index + 1}`.padStart(2, '0'));
+
+  if (mediaUrl) {
+    article.classList.add('sl-card-has-media');
+    const media = document.createElement('div');
+    media.className = 'sl-card-media';
+    const video = document.createElement('video');
+    video.src = mediaUrl;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('aria-hidden', 'true');
+    media.append(video);
+    article.append(media);
+    wireVideoPreview(article, video);
+  }
 
   const eyebrow = document.createElement('div');
   eyebrow.className = 'sl-card-eyebrow';
