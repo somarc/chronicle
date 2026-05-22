@@ -1,0 +1,128 @@
+.video-hero-container .video-hero-wrapper {
+  max-width: unset;
+  padding: 0;
+}
+
+.video-hero-container {
+  position: relative;
+}
+
+.video-hero {
+  position: relative;
+  display: grid;
+  align-content: end;
+  min-height: clamp(560px, calc(100svh - var(--nav-height, 44px)), 780px);
+  padding: 72px var(--content-padding-inline, 24px) 80px;
+  overflow: hidden;
+  background:
+    linear-gradient(115deg, rgb(88 166 255 / 34%), transparent 44%),
+    linear-gradient(35deg, rgb(52 211 153 / 16%), transparent 48%),
+    #0d1117;
+  color: #e6edf3;
+}
+
+.video-hero video {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+
+.video-hero::before,
+.video-hero::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.video-hero::before {
+  z-index: 1;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(230 237 243 / 7%) 1px, transparent 1px) 0 0 / 56px 56px,
+    linear-gradient(180deg, rgb(230 237 243 / 5%) 1px, transparent 1px) 0 0 / 56px 56px,
+    linear-gradient(90deg, rgb(13 17 23 / 88%) 0%, rgb(13 17 23 / 54%) 45%, rgb(13 17 23 / 26%) 100%),
+    linear-gradient(0deg, rgb(13 17 23 / 86%) 0%, rgb(13 17 23 / 20%) 48%, rgb(13 17 23 / 56%) 100%);
+}
+
+.video-hero::after {
+  z-index: 2;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 74%, rgb(88 166 255 / 22%), transparent 34%),
+    radial-gradient(circle at 62% 48%, rgb(52 211 153 / 13%), transparent 30%);
+  mix-blend-mode: screen;
+}
+
+.video-hero-content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.video-hero p {
+  max-width: 720px;
+  margin: 24px 0 0;
+  color: rgb(230 237 243 / 88%);
+  font-size: var(--body-font-size-l, 18px);
+  line-height: 1.5;
+  text-shadow: 0 12px 32px rgb(0 0 0 / 58%);
+}
+
+.video-hero p:first-child {
+  margin: 0 0 16px;
+  color: #34d399;
+  font-family: var(--mono-font-family, monospace);
+  font-size: var(--body-font-size-xs, 12px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.video-hero h1 {
+  max-width: 920px;
+  margin: 0;
+  color: #e6edf3;
+  font-size: clamp(3.5rem, 12vw, 8rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+  text-shadow: 0 18px 56px rgb(0 0 0 / 62%);
+}
+
+.video-hero h1 strong {
+  color: #58a6ff;
+  font-weight: 700;
+}
+
+@media (width >= 900px) {
+  .video-hero {
+    padding: 88px var(--content-padding-inline, 32px) 96px;
+  }
+
+  .video-hero p {
+    font-size: var(--body-font-size-xl, 20px);
+  }
+}
+
+@media (width < 600px) {
+  .video-hero {
+    min-height: 640px;
+  }
+
+  .video-hero video {
+    object-position: 58% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-hero video {
+    display: none;
+  }
+}
