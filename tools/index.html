@@ -3,56 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Flow Explorers · Chronicle</title>
+<title>Tools · Chronicle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh}
-
+:root{
+  --bg:#0d1117;
+  --panel:#161b22;
+  --panel2:#111720;
+  --border:#30363d;
+  --border2:#3d4652;
+  --text:#e6edf3;
+  --muted:#8b949e;
+  --dim:#6e7681;
+  --link:#58a6ff;
+  --link-soft:#1c2840;
+  --green:#34d399;
+  --yellow:#f2cc60;
+}
+body{
+  min-height:100vh;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+}
+a{color:inherit}
 #page-nav{position:sticky;top:0;z-index:100}
-
-main{max-width:960px;margin:0 auto;padding:40px 24px}
-
-.page-hd{margin-bottom:32px;border-bottom:1px solid #30363d;padding-bottom:24px}
-.page-hd h1{font-size:20px;font-weight:700;color:#e6edf3;margin-bottom:6px}
-.page-hd p{font-size:14px;color:#8b949e;line-height:1.5}
-
-.tools-grid{
+main{
+  width:min(1120px,calc(100vw - 40px));
+  margin:0 auto;
+  padding:40px 0 56px;
+}
+.page-hd{
+  display:grid;
+  gap:16px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:24px;
+  margin-bottom:24px;
+}
+.eyebrow{
+  width:fit-content;
+  border:1px solid rgb(52 211 153 / 25%);
+  border-radius:999px;
+  padding:3px 9px;
+  background:rgb(52 211 153 / 8%);
+  color:var(--green);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  text-transform:uppercase;
+}
+h1{
+  max-width:720px;
+  font-size:30px;
+  line-height:1.1;
+  letter-spacing:0;
+}
+.lede{
+  max-width:760px;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.6;
+}
+.stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.stat{
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:5px 10px;
+  background:rgb(22 27 34 / 70%);
+  color:var(--muted);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+}
+.stat strong{color:var(--text);font-weight:600}
+.layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:24px;
+}
+.section{
+  display:grid;
+  gap:14px;
+}
+.section-hd{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+}
+.section-hd h2{
+  font-size:16px;
+  line-height:1.2;
+}
+.section-hd p{
+  max-width:620px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+}
+.utility-grid,.explorer-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
-  gap:16px;
+  gap:14px;
 }
-
 .tool-card{
-  background:#161b22;border:1px solid #30363d;border-radius:10px;
-  padding:20px;display:flex;flex-direction:column;gap:10px;
-  text-decoration:none;color:inherit;
-  transition:border-color .15s,box-shadow .15s;
+  position:relative;
+  min-height:190px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:18px;
+  background:
+    linear-gradient(135deg,rgb(88 166 255 / 10%),transparent 36%),
+    linear-gradient(180deg,var(--panel),var(--panel2));
+  color:inherit;
+  text-decoration:none;
+  transition:transform .15s,border-color .15s,background .15s;
 }
-.tool-card:hover{border-color:#58a6ff;text-decoration:none;box-shadow:0 4px 16px rgba(88,166,255,.08)}
-
-.tc-project{
-  font-family:'IBM Plex Mono',monospace;font-size:10px;
-  color:#34d399;background:rgba(52,211,153,.1);
-  padding:2px 7px;border-radius:4px;border:1px solid rgba(52,211,153,.25);
-  display:inline-block;width:fit-content;
+.tool-card:hover{
+  transform:translateY(-2px);
+  border-color:var(--border2);
+  text-decoration:none;
 }
-.tool-card h2{font-size:15px;font-weight:600;color:#e6edf3;line-height:1.4;margin:0}
-.tool-card p{font-size:13px;color:#8b949e;line-height:1.5;flex:1;margin:0}
-.tc-footer{
-  display:flex;align-items:center;justify-content:space-between;
-  padding-top:12px;border-top:1px solid #21262d;
+.tool-card::after{
+  content:attr(data-index);
+  position:absolute;
+  right:14px;
+  bottom:-20px;
+  color:rgb(139 148 158 / 8%);
   font-family:'IBM Plex Mono',monospace;
+  font-size:76px;
+  font-weight:700;
+  line-height:1;
+  pointer-events:none;
 }
-.tc-issue{font-size:11px;color:#58a6ff}
-.tc-cta{
-  font-size:11px;color:#58a6ff;background:#1c2840;
-  border:1px solid #1f4e79;padding:4px 10px;border-radius:5px;
-  transition:background .15s;white-space:nowrap;
+.card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
 }
-.tool-card:hover .tc-cta{background:#1f4e79}
+.pill{
+  width:fit-content;
+  border:1px solid rgb(52 211 153 / 25%);
+  border-radius:4px;
+  padding:2px 7px;
+  background:rgb(52 211 153 / 10%);
+  color:var(--green);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+}
+.pill.utility{
+  border-color:rgb(242 204 96 / 28%);
+  background:rgb(242 204 96 / 10%);
+  color:var(--yellow);
+}
+.date{
+  color:var(--dim);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+}
+.tool-card h3{
+  margin:0;
+  max-width:25ch;
+  font-size:18px;
+  line-height:1.22;
+}
+.tool-card p{
+  flex:1;
+  margin:0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.55;
+}
+.card-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  padding-top:4px;
+}
+.cta{
+  border:1px solid #1f4e79;
+  border-radius:6px;
+  padding:5px 10px;
+  background:var(--link-soft);
+  color:var(--link);
+  font-size:13px;
+  font-weight:600;
+}
+.secondary{
+  color:var(--dim);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+}
+.state{
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:20px;
+  background:var(--panel);
+  color:var(--muted);
+  font-size:13px;
+}
+.state.error{border-color:rgb(248 81 73 / 35);color:#ffb4ad}
+@media (width >= 900px){
+  .layout{grid-template-columns:minmax(0,1.3fr) minmax(300px,.7fr);align-items:start}
+  .utilities{order:2}
+  .explorers{order:1}
+}
 </style>
 </head>
 <body>
@@ -60,59 +227,146 @@ main{max-width:960px;margin:0 auto;padding:40px 24px}
 <div id="page-nav"></div>
 
 <main>
-  <div class="page-hd">
-    <h1>Flow Explorers</h1>
-    <p>Interactive call-flow diagrams tracing engineering fixes across the AEM toolchain.</p>
-  </div>
+  <header class="page-hd">
+    <span class="eyebrow">Code-side surfaces</span>
+    <h1>Tools that operate beside the Chronicle</h1>
+    <p class="lede">This page should not mirror the main Chronicle index. It is the stable launch point for code-hosted utilities and the Flow Explorers that are actually linked from Chronicle entries.</p>
+    <div class="stats" aria-live="polite">
+      <span class="stat"><strong id="stat-tools">1</strong> utility</span>
+      <span class="stat"><strong id="stat-flows">...</strong> explorers</span>
+      <span class="stat"><strong id="stat-source">query-index.json</strong></span>
+    </div>
+  </header>
 
-  <div class="tools-grid">
-
-    <a class="tool-card" href="/tools/chronicle/flows.html">
-      <span class="tc-project">chronicle</span>
-      <h2>chronicle · activity log</h2>
-      <p>How the Log dashboard fetches, normalises, and renders GitHub event data across five views — Timeline, Heatmap, Blast Radius, Velocity, and By Repo — with Chronicle coverage badge injection.</p>
-      <div class="tc-footer">
-        <span class="tc-issue">PR #1</span>
-        <span class="tc-cta">Open Explorer →</span>
+  <div class="layout">
+    <section class="section utilities" aria-labelledby="utilities-title">
+      <div class="section-hd">
+        <div>
+          <h2 id="utilities-title">Utilities</h2>
+          <p>Durable tools that live on the code bus and are useful even when no single Chronicle entry owns them.</p>
+        </div>
       </div>
-    </a>
-
-    <a class="tool-card" href="/tools/helix-header/flows.html">
-      <span class="tc-project">helix-tools-website</span>
-      <h2>helix-header · experimental meta-sync</h2>
-      <p>How lab metadata on tool pages drives the header dropdown 🧪 icon and experimental ribbon tooltip — replacing hand-authored nav markers.</p>
-      <div class="tc-footer">
-        <span class="tc-issue">PR #289</span>
-        <span class="tc-cta">Open Explorer →</span>
+      <div class="utility-grid">
+        <a class="tool-card" href="/tools/log/index.html" data-index="01">
+          <div class="card-top">
+            <span class="pill utility">utility</span>
+            <span class="date">live activity</span>
+          </div>
+          <h3>Activity Log</h3>
+          <p>GitHub activity across timeline, repo, heatmap, blast-radius, and velocity views, with Chronicle coverage badges when entries exist.</p>
+          <div class="card-actions">
+            <span class="cta">Open Log</span>
+            <span class="secondary">/tools/log</span>
+          </div>
+        </a>
       </div>
-    </a>
+    </section>
 
-    <a class="tool-card" href="/tools/user-admin/flows.html">
-      <span class="tc-project">helix-tools-website</span>
-      <h2>user-admin · admin client migration</h2>
-      <p>Auth retry flow via executeAdminRequest — PREFLIGHT_AND_RETRY vs RETRY_ON_401, waitForLogin, and the buildAccessConfig immutability fix.</p>
-      <div class="tc-footer">
-        <span class="tc-issue">PR #329</span>
-        <span class="tc-cta">Open Explorer →</span>
+    <section class="section explorers" aria-labelledby="explorers-title">
+      <div class="section-hd">
+        <div>
+          <h2 id="explorers-title">Flow Explorers</h2>
+          <p>Generated from the Chronicle index at load time, so missing explorer links disappear here instead of becoming stale cards.</p>
+        </div>
       </div>
-    </a>
-
-    <a class="tool-card" href="/tools/page-status/flows.html">
-      <span class="tc-project">helix-tools-website</span>
-      <h2>page-status · BYOM sourceLastModified</h2>
-      <p>Classification flow for the null ?? NaN guard fix. Traces how page-status determines sequence status across 10 scenarios.</p>
-      <div class="tc-footer">
-        <span class="tc-issue">#340</span>
-        <span class="tc-cta">Open Explorer →</span>
+      <div id="explorer-grid" class="explorer-grid">
+        <div class="state">Loading Flow Explorers...</div>
       </div>
-    </a>
-
+    </section>
   </div>
 </main>
 
 <script type="module">
   import { buildNav } from '/scripts/chronicle-nav.js';
   buildNav(document.getElementById('page-nav'));
+
+  const INDEX_URL = '/query-index.json';
+  const CHRONICLE_BASE = 'https://main--chronicle--somarc.aem.live';
+  const grid = document.getElementById('explorer-grid');
+  const statFlows = document.getElementById('stat-flows');
+
+  function esc(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function cleanTitle(value) {
+    return String(value || 'Untitled explorer')
+      .replace(/\s+—\s+Chronicle(?:Chronicle)?$/i, '')
+      .replace(/ChronicleChronicle$/i, 'Chronicle')
+      .trim();
+  }
+
+  function fmtDate(value) {
+    if (!value) return '';
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return '';
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  function issueLabel(entry) {
+    if (entry['issue-number']) return `#${entry['issue-number']}`;
+    if (entry['pr-url']) {
+      const match = entry['pr-url'].match(/\/pull\/(\d+)/);
+      if (match) return `PR #${match[1]}`;
+    }
+    return entry.project || 'explorer';
+  }
+
+  function renderExplorers(entries) {
+    const explorers = entries
+      .filter(entry => entry['flows-url'])
+      .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+
+    statFlows.textContent = explorers.length;
+
+    if (!explorers.length) {
+      grid.innerHTML = '<div class="state">No Flow Explorers are linked from Chronicle entries yet.</div>';
+      return;
+    }
+
+    grid.innerHTML = explorers.map((entry, index) => {
+      const title = cleanTitle(entry.title);
+      const flowUrl = entry['flows-url'];
+      const issueUrl = entry.path ? `${CHRONICLE_BASE}${entry.path}` : '';
+      return `
+        <a class="tool-card" href="${esc(flowUrl)}" data-index="${String(index + 1).padStart(2, '0')}">
+          <div class="card-top">
+            <span class="pill">${esc(entry.project || 'chronicle')}</span>
+            <span class="date">${esc(fmtDate(entry.date))}</span>
+          </div>
+          <h3>${esc(title)}</h3>
+          <p>${esc(entry.description || 'Interactive walkthrough for the linked Chronicle entry.')}</p>
+          <div class="card-actions">
+            <span class="cta">Open Explorer</span>
+            <span class="secondary">${esc(issueLabel(entry))}</span>
+            ${issueUrl ? `<span class="secondary">entry: ${esc(entry.path)}</span>` : ''}
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  async function loadExplorers() {
+    try {
+      const res = await fetch(INDEX_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Index returned ${res.status}`);
+      const json = await res.json();
+      renderExplorers(json.data || []);
+    } catch (err) {
+      statFlows.textContent = '0';
+      grid.innerHTML = `<div class="state error">Could not load Chronicle index: ${esc(err.message)}</div>`;
+    }
+  }
+
+  loadExplorers();
 </script>
 
 </body>
