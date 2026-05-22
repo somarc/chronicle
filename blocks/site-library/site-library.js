@@ -2,10 +2,6 @@ function textFrom(cell) {
   return cell?.textContent?.trim() || '';
 }
 
-function cleanDate(value) {
-  return value.replace(/^Last published:\s*/i, '').trim();
-}
-
 function hostLabel(url) {
   try {
     return new URL(url).hostname.replace('.aem.live', '');
@@ -65,11 +61,10 @@ function wireVideoPreview(card, video) {
 
 function makeCard(row, index) {
   const cells = [...row.children];
-  const [titleCell, urlCell, descCell, dateCell, mediaCell] = cells;
+  const [titleCell, urlCell, descCell, , mediaCell] = cells;
   const title = textFrom(titleCell) || 'Untitled site';
   const url = linkOrTextFrom(urlCell);
   const description = textFrom(descCell);
-  const date = cleanDate(textFrom(dateCell));
   const mediaUrl = linkOrTextFrom(mediaCell);
 
   const article = document.createElement('article');
@@ -107,13 +102,6 @@ function makeCard(row, index) {
   desc.className = 'sl-card-desc';
   desc.textContent = description;
 
-  const meta = document.createElement('div');
-  meta.className = 'sl-card-meta';
-  meta.innerHTML = `
-    <span class="sl-meta-label">Last published</span>
-    <span>${date || 'Not available'}</span>
-  `;
-
   const actions = document.createElement('div');
   actions.className = 'sl-card-actions';
   if (url) {
@@ -130,7 +118,7 @@ function makeCard(row, index) {
     actions.append(visit, raw);
   }
 
-  article.append(eyebrow, heading, desc, meta, actions);
+  article.append(eyebrow, heading, desc, actions);
   return article;
 }
 
