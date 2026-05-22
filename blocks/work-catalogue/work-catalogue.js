@@ -49,7 +49,7 @@ function entryCard(entry) {
     <a class="wc-title" href="${entry.path}">${entry.title || 'Untitled'}</a>
     ${entry.description ? `<p class="wc-desc">${entry.description}</p>` : ''}
     <div class="wc-links">
-      ${entry['flows-url'] ? `<a class="wc-link wc-flows" href="${entry['flows-url']}">Flow Explorer →</a>` : ''}
+      ${entry['flows-url'] ? `<a class="wc-link wc-flows" href="${entry['flows-url']}">Flow Explorer →</a>` : '<span class="wc-link wc-link-disabled" aria-disabled="true">No Flow Explorer</span>'}
       ${entry['pr-url'] ? `<a class="wc-link" href="${entry['pr-url']}" target="_blank" rel="noopener">PR</a>` : ''}
     </div>
   `;
