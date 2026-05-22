@@ -1603,7 +1603,30 @@ function chronicleBadge(entry) {
 }
 
 // ── Formatting helpers ────────────────────────────────────────────────────────
-const TZ = 'America/New_York';
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
+const DATE_KEY_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: TZ,
+});
+
+function localDateKey(value) {
+  const parts = DATE_KEY_FORMATTER.formatToParts(new Date(value));
+  const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${byType.year}-${byType.month}-${byType.day}`;
+}
+
+function localDateFromKey(key) {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function shiftLocalDays(date, days) {
+  const shifted = new Date(date);
+  shifted.setDate(shifted.getDate() + days);
+  return shifted;
+}
 
 function fmtTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TZ });
@@ -1732,7 +1755,7 @@ function renderTimeline(events) {
   // Group by day
   const byDay = new Map();
   events.forEach(e => {
-    const day = e.created_at.slice(0, 10);
+    const day = localDateKey(e.created_at);
     if (!byDay.has(day)) byDay.set(day, []);
     byDay.get(day).push(e);
   });
@@ -1754,7 +1777,7 @@ function renderTimeline(events) {
     }).join('');
 
     const label = el('div', 'day-label');
-    label.innerHTML = `${fmtDate(day + 'T12:00:00')} <span class="day-count">${dayEvents.length}</span><div class="day-summary">${summaryHtml}</div><span class="day-toggle">▾</span>`;
+    label.innerHTML = `${fmtDate(localDateFromKey(day))} <span class="day-count">${dayEvents.length}</span><div class="day-summary">${summaryHtml}</div><span class="day-toggle">▾</span>`;
     label.addEventListener('click', () => group.classList.toggle('collapsed'));
     group.appendChild(label);
 
@@ -2028,7 +2051,7 @@ function renderHeatmap(events) {
   // Build day→events map
   const dayMap = new Map();
   events.forEach(e => {
-    const day = e.created_at.slice(0, 10);
+    const day = localDateKey(e.created_at);
     if (!dayMap.has(day)) dayMap.set(day, []);
     dayMap.get(day).push(e);
   });
@@ -2037,16 +2060,14 @@ function renderHeatmap(events) {
   const allDays = [...dayMap.keys()].sort();
   if (!allDays.length) return;
 
-  const earliest = new Date(allDays[0] + 'T00:00:00Z');
+  const earliest = localDateFromKey(allDays[0]);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   // Extend to Sunday before earliest and Saturday after today
-  const startSunday = new Date(earliest);
-  startSunday.setUTCDate(startSunday.getUTCDate() - startSunday.getUTCDay());
+  const startSunday = shiftLocalDays(earliest, -earliest.getDay());
 
-  const endSaturday = new Date(today);
-  endSaturday.setUTCDate(endSaturday.getUTCDate() + (6 - endSaturday.getUTCDay()));
+  const endSaturday = shiftLocalDays(today, 6 - today.getDay());
 
   // Build week columns (Sun → Sat grid like GitHub)
   const weeks = [];
@@ -2054,7 +2075,7 @@ function renderHeatmap(events) {
   while (cur <= endSaturday) {
     const week = [0, 1, 2, 3, 4, 5, 6].map(() => {
       const d = new Date(cur);
-      cur.setUTCDate(cur.getUTCDate() + 1);
+      cur.setDate(cur.getDate() + 1);
       return d;
     });
     weeks.push(week);
@@ -2099,7 +2120,7 @@ function renderHeatmap(events) {
   weeks.forEach(week => {
     const col = el('div', 'heatmap-col');
     week.forEach((date, dow) => {
-      const dateStr = date.toISOString().slice(0, 10);
+      const dateStr = localDateKey(date);
       const evs = dayMap.get(dateStr) || [];
       const count = evs.length;
       const level = getLevel(count);
@@ -2143,10 +2164,10 @@ function renderHeatmap(events) {
   let lastMonth = -1;
   weeks.forEach(week => {
     const firstDayOfWeek = week[0];
-    const mo = firstDayOfWeek.getUTCMonth();
+    const mo = firstDayOfWeek.getMonth();
     const lbl = el('div', 'month-label');
     if (mo !== lastMonth) {
-      lbl.textContent = firstDayOfWeek.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
+      lbl.textContent = firstDayOfWeek.toLocaleDateString('en-US', { month: 'short', timeZone: TZ });
       lastMonth = mo;
     } else {
       lbl.textContent = '';
@@ -2234,14 +2255,14 @@ function computeStreak(dayMap) {
   let streak = 0;
   let daysChecked = 0;
   while (daysChecked < 365) {
-    const dateStr = cur.toISOString().slice(0, 10);
+    const dateStr = localDateKey(cur);
     if (dayMap.has(dateStr) && dayMap.get(dateStr).length > 0) {
       streak++;
     } else if (streak > 0 || daysChecked > 1) {
       // Allow today to be empty (current day may not have events yet)
       if (daysChecked > 0) break;
     }
-    cur.setUTCDate(cur.getUTCDate() - 1);
+    cur.setDate(cur.getDate() - 1);
     daysChecked++;
   }
   return streak;
@@ -2492,7 +2513,7 @@ function renderVelocity(events) {
   // Streak
   const dayMap = new Map();
   events.forEach(e => {
-    const day = e.created_at.slice(0, 10);
+    const day = localDateKey(e.created_at);
     if (!dayMap.has(day)) dayMap.set(day, []);
     dayMap.get(day).push(e);
   });
@@ -2573,10 +2594,10 @@ function renderVelocity(events) {
     const lbl = el('div', 'vel-bar-label');
     // week key is YYYY-WNN — find Monday of that week
     const [yr, wn] = week.split('-W').map(Number);
-    const jan4 = new Date(Date.UTC(yr, 0, 4));
+    const jan4 = new Date(yr, 0, 4);
     const weekStart = new Date(jan4);
-    weekStart.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() || 7) + 1 + (wn - 1) * 7);
-    lbl.textContent = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    weekStart.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1 + (wn - 1) * 7);
+    lbl.textContent = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: TZ });
     group.appendChild(lbl);
 
     barChart.appendChild(group);
@@ -2641,12 +2662,12 @@ function renderVelocity(events) {
 function getISOWeekKey(date) {
   // Returns YYYY-WNN string (ISO week)
   const d = new Date(date);
-  d.setUTCHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
   // Thursday in current week
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
 function sanitizeId(str) {
