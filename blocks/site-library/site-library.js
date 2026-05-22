@@ -19,6 +19,23 @@ function linkOrTextFrom(cell) {
   return link?.href || textFrom(cell);
 }
 
+function ensureVideoPreviewStyles() {
+  if (document.getElementById('site-library-video-preview-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'site-library-video-preview-styles';
+  style.textContent = `
+    .site-library .sl-card-has-media.sl-card-active .sl-card-media,
+    .site-library .sl-card-has-media:hover .sl-card-media,
+    .site-library .sl-card-has-media:focus-within .sl-card-media { opacity: 1; }
+    .site-library .sl-card-media::after {
+      background:
+        linear-gradient(90deg, rgb(13 17 23 / 58%) 0%, rgb(13 17 23 / 28%) 48%, rgb(13 17 23 / 42%) 100%),
+        linear-gradient(180deg, rgb(13 17 23 / 16%) 0%, rgb(13 17 23 / 64%) 100%);
+    }
+  `;
+  document.head.append(style);
+}
+
 function wireVideoPreview(card, video) {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -133,6 +150,8 @@ function groupLabel(block) {
 }
 
 export default function decorate(block) {
+  ensureVideoPreviewStyles();
+
   const rows = [...block.children].filter((row) => row.children.length);
   const cards = rows.map(makeCard);
 
