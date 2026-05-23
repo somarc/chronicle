@@ -1300,6 +1300,17 @@ html, body {
   border-radius: 10px;
   padding: 2px 8px;
 }
+
+.source-note {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
 </style>
 </head>
 <body>
@@ -1311,7 +1322,7 @@ html, body {
   <div id="page-header">
     <div class="page-hd-row">
       <h1>Log</h1>
-      <span class="sub">somarc · GitHub activity</span>
+      <span class="sub">somarc · latest GitHub activity slice</span>
       <span class="user-pill">somarc</span>
       <div class="header-right">
         <span class="data-freshness" id="freshness-label"></span>
@@ -1344,6 +1355,7 @@ html, body {
       <div class="tabs-meta">
         <span class="meta-pill" id="meta-total">— events</span>
         <span class="meta-pill" id="meta-range">—</span>
+        <span class="meta-pill" id="meta-source">GitHub Events API · last 300</span>
       </div>
     </div>
   </div>
@@ -1367,7 +1379,11 @@ html, body {
         </div>
         <div class="load-step">
           <div class="step-dot" id="step-3"></div>
-          <span id="step-3-label">Chronicle index</span>
+          <span id="step-3-label">GitHub events (page 3)</span>
+        </div>
+        <div class="load-step">
+          <div class="step-dot" id="step-4"></div>
+          <span id="step-4-label">Chronicle index</span>
         </div>
       </div>
     </div>
@@ -1423,9 +1439,17 @@ buildNav(nav);
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const GH_USER = 'somarc';
-const GH_EVENTS_URL = `https://api.github.com/users/${GH_USER}/events?per_page=100&page=`;
+const GH_EVENT_PAGE_SIZE = 100;
+const GH_EVENT_PAGE_LIMIT = 3;
+const GH_EVENT_SOURCE_LABEL = `GitHub Events API · latest ${GH_EVENT_PAGE_SIZE * GH_EVENT_PAGE_LIMIT}`;
+const GH_EVENTS_URL = `https://api.github.com/users/${GH_USER}/events?per_page=${GH_EVENT_PAGE_SIZE}&page=`;
+const ACTIVITY_DB_NAME = 'chronicle-activity-log';
+const ACTIVITY_DB_VERSION = 1;
+const ACTIVITY_STORE_NAME = 'github-events';
+const ACTIVITY_ARCHIVE_LIMIT = 5000;
 const CHRONICLE_INDEX_URL = 'https://main--chronicle--somarc.aem.live/query-index.json';
 const CHRONICLE_BASE = 'https://main--chronicle--somarc.aem.live';
+const ACTIVE_EVENT_TYPES = ['PushEvent', 'PullRequestEvent', 'CreateEvent', 'DeleteEvent', 'PullRequestReviewEvent'];
 
 // Repo colours — deterministic palette
 const REPO_PALETTE = [
@@ -1476,6 +1500,13 @@ let chronicleEntries = [];
 let activeView = 'timeline';
 let blastSelectedCat = null;
 let fetchedAt = null;
+let activitySource = {
+  label: GH_EVENT_SOURCE_LABEL,
+  fetched: 0,
+  max: GH_EVENT_PAGE_SIZE * GH_EVENT_PAGE_LIMIT,
+  archived: 0,
+  stored: false,
+};
 
 // ── Loading UI ───────────────────────────────────────────────────────────────
 function setStep(n, state) {
@@ -1519,6 +1550,124 @@ async function fetchEvents(page) {
   return res.json();
 }
 
+function openActivityDb() {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      reject(new Error('IndexedDB is not available in this browser.'));
+      return;
+    }
+
+    const req = indexedDB.open(ACTIVITY_DB_NAME, ACTIVITY_DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      const store = db.objectStoreNames.contains(ACTIVITY_STORE_NAME)
+        ? req.transaction.objectStore(ACTIVITY_STORE_NAME)
+        : db.createObjectStore(ACTIVITY_STORE_NAME, { keyPath: 'id' });
+
+      if (!store.indexNames.contains('created_at')) {
+        store.createIndex('created_at', 'created_at');
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('Failed to open IndexedDB activity archive.'));
+  });
+}
+
+function readAllStoredEvents(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(ACTIVITY_STORE_NAME, 'readonly');
+    const req = tx.objectStore(ACTIVITY_STORE_NAME).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error || new Error('Failed to read IndexedDB activity archive.'));
+  });
+}
+
+function writeStoredEvents(db, events) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(ACTIVITY_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(ACTIVITY_STORE_NAME);
+    events.forEach(event => store.put(event));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('Failed to write IndexedDB activity archive.'));
+  });
+}
+
+function pruneStoredEvents(db, events) {
+  const overflow = events.slice(ACTIVITY_ARCHIVE_LIMIT);
+  if (!overflow.length) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(ACTIVITY_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(ACTIVITY_STORE_NAME);
+    overflow.forEach(event => store.delete(event.id));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('Failed to prune IndexedDB activity archive.'));
+  });
+}
+
+function mergeEvents(...eventLists) {
+  const seen = new Set();
+  return eventLists
+    .flat()
+    .filter(Boolean)
+    .filter(event => {
+      if (!event.id || seen.has(event.id)) return false;
+      seen.add(event.id);
+      return true;
+    })
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+async function fetchActivityEvents() {
+  // The GitHub Events API only exposes a short public window; IndexedDB keeps a local rolling archive between visits.
+  const pages = Array.from({ length: GH_EVENT_PAGE_LIMIT }, (_, i) => i + 1);
+  const results = await Promise.allSettled(pages.map(page => fetchEvents(page)));
+  const first = results[0];
+  if (first.status === 'rejected') {
+    throw new Error(first.reason?.message || 'Failed to fetch events');
+  }
+
+  results.forEach((result, i) => {
+    setStep(i + 1, result.status === 'fulfilled' && result.value.length > 0 ? 'done' : 'error');
+  });
+
+  const fetchedEvents = mergeEvents(
+    results.flatMap(result => (result.status === 'fulfilled' ? result.value || [] : [])),
+  );
+  let events = fetchedEvents;
+  let archived = fetchedEvents.length;
+  let stored = false;
+
+  try {
+    const db = await openActivityDb();
+    try {
+      const storedEvents = await readAllStoredEvents(db);
+      const merged = mergeEvents(fetchedEvents, storedEvents);
+      const retained = merged.slice(0, ACTIVITY_ARCHIVE_LIMIT);
+      await writeStoredEvents(db, retained);
+      await pruneStoredEvents(db, merged);
+      events = retained;
+      archived = retained.length;
+      stored = true;
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    console.warn('Chronicle activity archive unavailable:', err);
+  }
+
+  return {
+    events,
+    source: {
+      label: stored ? `${GH_EVENT_SOURCE_LABEL} + IndexedDB archive` : GH_EVENT_SOURCE_LABEL,
+      fetched: fetchedEvents.length,
+      max: GH_EVENT_PAGE_SIZE * GH_EVENT_PAGE_LIMIT,
+      archived,
+      stored,
+    },
+  };
+}
+
 async function fetchChronicle() {
   try {
     const res = await fetch(CHRONICLE_INDEX_URL);
@@ -1534,39 +1683,27 @@ async function loadData() {
   showLoading();
   setStep(1, 'active');
   setStep(2, 'active');
+  setStep(3, 'active');
+  setStep(4, '');
   setProgress(10);
 
   try {
-    // Fetch both pages in parallel
-    const [p1res, p2res, chronicle] = await Promise.allSettled([
-      fetchEvents(1),
-      fetchEvents(2),
+    const [activity, chronicle] = await Promise.allSettled([
+      fetchActivityEvents(),
       fetchChronicle(),
     ]);
 
     setProgress(80);
 
-    if (p1res.status === 'rejected') {
-      throw new Error(p1res.reason?.message || 'Failed to fetch events');
+    if (activity.status === 'rejected') {
+      throw new Error(activity.reason?.message || 'Failed to fetch events');
     }
 
-    const page1 = p1res.value || [];
-    const page2 = p2res.status === 'fulfilled' ? (p2res.value || []) : [];
-
-    setStep(1, 'done');
-    setStep(2, page2.length > 0 ? 'done' : 'error');
-    setStep(3, 'done');
+    setStep(4, chronicle.status === 'fulfilled' ? 'done' : 'error');
     setProgress(100);
 
-    // Merge + deduplicate by id
-    const seen = new Set();
-    const merged = [...page1, ...page2].filter(e => {
-      if (seen.has(e.id)) return false;
-      seen.add(e.id);
-      return true;
-    });
-
-    allEvents = merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    allEvents = activity.value.events;
+    activitySource = activity.value.source;
     chronicleEntries = chronicle.status === 'fulfilled' ? chronicle.value : (chronicle || []);
 
     fetchedAt = new Date();
@@ -1600,6 +1737,16 @@ function chronicleBadge(entry) {
   if (!entry) return '';
   const url = CHRONICLE_BASE + entry.path;
   return `<a class="chron-badge" href="${url}" target="_blank" title="${entry.title}">chronicled</a>`;
+}
+
+function sourceNote(detail = '') {
+  const note = el('div', 'source-note');
+  const suffix = detail ? ` ${detail}` : '';
+  const archive = activitySource.stored
+    ? ` ${activitySource.archived} retained locally.`
+    : '';
+  note.textContent = `${activitySource.label}; ${activitySource.fetched} fetched from the API.${archive}${suffix}`;
+  return note;
 }
 
 // ── Formatting helpers ────────────────────────────────────────────────────────
@@ -1700,9 +1847,7 @@ function switchView(name) {
 function renderAll() {
   if (!allEvents.length) return;
 
-  const filtered = allEvents.filter(e =>
-    ['PushEvent', 'PullRequestEvent', 'CreateEvent', 'DeleteEvent', 'PullRequestReviewEvent'].includes(e.type)
-  );
+  const filtered = allEvents.filter(e => ACTIVE_EVENT_TYPES.includes(e.type));
 
   updateMetaPills(filtered);
   renderTimeline(filtered);
@@ -1715,7 +1860,10 @@ function renderAll() {
 function updateMetaPills(events) {
   $('tc-timeline').textContent = events.length;
   $('tc-repo').textContent = new Set(events.map(e => e.repo.name)).size;
-  $('meta-total').textContent = `${events.length} events`;
+  $('meta-total').textContent = `${events.length} shown`;
+  $('meta-source').textContent = activitySource.stored
+    ? `${activitySource.archived} local · ${activitySource.fetched}/${activitySource.max} API`
+    : `${activitySource.label} · ${activitySource.fetched}/${activitySource.max}`;
 
   if (events.length > 0) {
     const dates = events.map(e => e.created_at).sort();
@@ -1731,6 +1879,7 @@ function updateMetaPills(events) {
 function renderTimeline(events) {
   const container = $('timeline-content');
   container.innerHTML = '';
+  container.appendChild(sourceNote('Timeline applies the signal-event filter, groups push activity into lanes, and highlights PR/create/delete/review events.'));
 
   // Repo colour legend
   const legendRow = el('div', '');
@@ -1943,6 +2092,7 @@ function buildEventRow(e) {
 function renderByRepo(events) {
   const container = $('repo-content');
   container.innerHTML = '';
+  container.appendChild(sourceNote('Repository totals apply the signal-event filter and are relative to the current slice.'));
 
   // Group by repo
   const byRepo = new Map();
@@ -2047,6 +2197,7 @@ function buildRepoSection(repoName, events, startOpen) {
 function renderHeatmap(events) {
   const container = $('heatmap-content');
   container.innerHTML = '';
+  container.appendChild(sourceNote('The heatmap includes all fetched event types and its scale is fitted to this slice, not lifetime activity.'));
 
   // Build day→events map
   const dayMap = new Map();
@@ -2100,7 +2251,7 @@ function renderHeatmap(events) {
 
   // Title
   const title = el('div', 'heatmap-title');
-  title.textContent = `Activity heatmap · ${allDays.length > 0 ? allDays[0] : ''} → ${allDays[allDays.length-1] || ''}`;
+  title.textContent = `Latest activity heatmap · ${allDays.length > 0 ? allDays[0] : ''} → ${allDays[allDays.length-1] || ''}`;
   wrap.appendChild(title);
 
   const outer = el('div', 'heatmap-outer');
@@ -2219,14 +2370,14 @@ function renderHeatmap(events) {
   const statsBar = el('div', 'heatmap-stats-bar');
   statsBar.innerHTML = `
     <div class="hm-stat">
-      <div class="hm-stat-label">Total events</div>
+      <div class="hm-stat-label">Slice events</div>
       <div class="hm-stat-value">${totalEvents}</div>
       <div class="hm-stat-sub">across ${activeDays.length} days</div>
     </div>
     <div class="hm-stat">
-      <div class="hm-stat-label">Active days</div>
+      <div class="hm-stat-label">Active days in slice</div>
       <div class="hm-stat-value">${activeDays.length}</div>
-      <div class="hm-stat-sub">of ${allDays.length} tracked</div>
+      <div class="hm-stat-sub">within visible range</div>
     </div>
     <div class="hm-stat">
       <div class="hm-stat-label">Busiest day</div>
@@ -2234,9 +2385,9 @@ function renderHeatmap(events) {
       <div class="hm-stat-sub">${busiestDay[0]}</div>
     </div>
     <div class="hm-stat">
-      <div class="hm-stat-label">Current streak</div>
+      <div class="hm-stat-label">Slice streak</div>
       <div class="hm-stat-value" style="color:var(--green)">${streak}</div>
-      <div class="hm-stat-sub">consecutive days</div>
+      <div class="hm-stat-sub">from visible events</div>
     </div>
     <div class="hm-stat">
       <div class="hm-stat-label">Top repo</div>
@@ -2274,10 +2425,11 @@ function computeStreak(dayMap) {
 function renderBlastRadius(events) {
   const container = $('blast-content');
   container.innerHTML = '';
+  container.appendChild(sourceNote('Branch distribution is relative to push events in this slice.'));
 
   const pushEvents = events.filter(e => e.type === 'PushEvent');
   if (!pushEvents.length) {
-    container.textContent = 'No push events found.';
+    container.appendChild(document.createTextNode('No push events found.'));
     return;
   }
 
@@ -2486,6 +2638,7 @@ function updateBlastDetail() {
 function renderVelocity(events) {
   const container = $('velocity-content');
   container.innerHTML = '';
+  container.appendChild(sourceNote('Velocity applies the signal-event filter and should be read as a short-window pulse.'));
 
   if (!events.length) return;
 
@@ -2525,7 +2678,7 @@ function renderVelocity(events) {
   const statsGrid = el('div', 'vel-stats-grid');
   statsGrid.innerHTML = `
     <div class="vel-stat-card accent">
-      <div class="label">Total events</div>
+      <div class="label">Slice events</div>
       <div class="value">${totalEvents}</div>
       <div class="sub">${sortedWeeks.length} week${sortedWeeks.length > 1 ? 's' : ''} of data</div>
     </div>
@@ -2540,9 +2693,9 @@ function renderVelocity(events) {
       <div class="sub">${busiestWeek[0]}</div>
     </div>
     <div class="vel-stat-card green">
-      <div class="label">Current streak</div>
+      <div class="label">Slice streak</div>
       <div class="value">${streak}</div>
-      <div class="sub">consecutive active days</div>
+      <div class="sub">from visible events</div>
     </div>
   `;
   wrap.appendChild(statsGrid);
