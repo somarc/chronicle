@@ -10,11 +10,13 @@
   --sl-green: #34d399;
 
   display: grid;
-  gap: 18px;
+  gap: 14px;
   margin-block: 18px 34px;
+  grid-template-columns: 1fr;
 }
 
 .site-library .sl-summary {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -36,12 +38,6 @@
   color: var(--sl-green);
   border-color: rgb(52 211 153 / 25%);
   background: rgb(52 211 153 / 8%);
-}
-
-.site-library .sl-grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: 1fr;
 }
 
 .site-library .sl-card {
@@ -142,6 +138,9 @@
 
 .site-library .sl-card-title {
   margin: 0;
+  font-family: var(--heading-font-family);
+  font-weight: 600;
+  color: var(--text-color);
   max-width: 22ch;
   text-shadow: 0 12px 28px rgb(0 0 0 / 42%);
   font-size: 22px;
@@ -182,8 +181,20 @@
   text-decoration: none;
 }
 
+.site-library .sl-card-spare,
+.site-library .sl-card-config,
+.site-library .sl-card > div:empty {
+  display: none;
+}
+
+.site-library .sl-card p {
+  margin: 0;
+}
+
 .site-library .sl-url {
   width: fit-content;
+  font-family: var(--mono-font-family);
+  font-size: 12px;
   max-width: 100%;
   overflow: hidden;
   color: var(--sl-muted);
@@ -198,17 +209,17 @@
 }
 
 @media (width >= 700px) {
-  .site-library .sl-grid {
+  .site-library {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (width >= 1100px) {
-  .site-library .sl-grid {
+  .site-library {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .site-library .sl-grid-many .sl-card:first-child {
+  .site-library.sl-grid-many > .sl-card:first-child {
     grid-column: span 2;
   }
 }

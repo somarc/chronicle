@@ -1,6 +1,18 @@
-function textFrom(cell) {
-  return cell?.textContent?.trim() || '';
-}
+/*
+ * site-library — catalogue cards for the Somarc EDS library.
+ *
+ * Canvas-safe by construction: the authored rows become the cards and
+ * authored cells are classified in place. The URL cell is moved intact
+ * (never copied) into the actions wrapper; synthetic elements (eyebrow,
+ * visit link, summary bar, video preview) are additions only.
+ *
+ * Authored contract (five cells per row):
+ *   1. site name
+ *   2. site url (plain text or link)
+ *   3. description
+ *   4. reserved (authored status, unused today)
+ *   5. media url (splash video, optional)
+ */
 
 function hostLabel(url) {
   try {
@@ -10,26 +22,9 @@ function hostLabel(url) {
   }
 }
 
-function linkOrTextFrom(cell) {
+function cellUrl(cell) {
   const link = cell?.querySelector?.('a[href]');
-  return link?.href || textFrom(cell);
-}
-
-function ensureVideoPreviewStyles() {
-  if (document.getElementById('site-library-video-preview-styles')) return;
-  const style = document.createElement('style');
-  style.id = 'site-library-video-preview-styles';
-  style.textContent = `
-    .site-library .sl-card-has-media.sl-card-active .sl-card-media,
-    .site-library .sl-card-has-media:hover .sl-card-media,
-    .site-library .sl-card-has-media:focus-within .sl-card-media { opacity: 1; }
-    .site-library .sl-card-media::after {
-      background:
-        linear-gradient(90deg, rgb(13 17 23 / 58%) 0%, rgb(13 17 23 / 28%) 48%, rgb(13 17 23 / 42%) 100%),
-        linear-gradient(180deg, rgb(13 17 23 / 16%) 0%, rgb(13 17 23 / 64%) 100%);
-    }
-  `;
-  document.head.append(style);
+  return link?.href || cell?.textContent?.trim() || '';
 }
 
 function wireVideoPreview(card, video) {
@@ -59,69 +54,6 @@ function wireVideoPreview(card, video) {
   });
 }
 
-function makeCard(row, index) {
-  const cells = [...row.children];
-  const [titleCell, urlCell, descCell, , mediaCell] = cells;
-  const title = textFrom(titleCell) || 'Untitled site';
-  const url = linkOrTextFrom(urlCell);
-  const description = textFrom(descCell);
-  const mediaUrl = linkOrTextFrom(mediaCell);
-
-  const article = document.createElement('article');
-  article.className = 'sl-card';
-  article.style.setProperty('--sl-index', `${index + 1}`.padStart(2, '0'));
-
-  if (mediaUrl) {
-    article.classList.add('sl-card-has-media');
-    const media = document.createElement('div');
-    media.className = 'sl-card-media';
-    const video = document.createElement('video');
-    video.src = mediaUrl;
-    video.muted = true;
-    video.defaultMuted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.preload = 'metadata';
-    video.setAttribute('muted', '');
-    video.setAttribute('playsinline', '');
-    video.setAttribute('aria-hidden', 'true');
-    media.append(video);
-    article.append(media);
-    wireVideoPreview(article, video);
-  }
-
-  const eyebrow = document.createElement('div');
-  eyebrow.className = 'sl-card-eyebrow';
-  eyebrow.innerHTML = `<span>${`${index + 1}`.padStart(2, '0')}</span><span>${hostLabel(url)}</span>`;
-
-  const heading = document.createElement('h3');
-  heading.className = 'sl-card-title';
-  heading.textContent = title;
-
-  const desc = document.createElement('p');
-  desc.className = 'sl-card-desc';
-  desc.textContent = description;
-
-  const actions = document.createElement('div');
-  actions.className = 'sl-card-actions';
-  if (url) {
-    const visit = document.createElement('a');
-    visit.className = 'sl-visit';
-    visit.href = url;
-    visit.target = '_blank';
-    visit.rel = 'noopener';
-    visit.textContent = 'Open site';
-
-    const raw = document.createElement('code');
-    raw.className = 'sl-url';
-    raw.textContent = url;
-    actions.append(visit, raw);
-  }
-
-  article.append(eyebrow, heading, desc, actions);
-  return article;
-}
-
 function groupLabel(block) {
   let sibling = (block.closest('.site-library-wrapper') || block).previousElementSibling;
   while (sibling) {
@@ -138,21 +70,77 @@ function groupLabel(block) {
 }
 
 export default function decorate(block) {
-  ensureVideoPreviewStyles();
+  const rows = [...block.children].filter((row) => row.children.length && row.textContent.trim());
+  if (rows.length > 3) block.classList.add('sl-grid-many');
 
-  const rows = [...block.children].filter((row) => row.children.length);
-  const cards = rows.map(makeCard);
+  rows.forEach((row, index) => {
+    row.classList.add('sl-card');
+    row.style.setProperty('--sl-index', `"${`${index + 1}`.padStart(2, '0')}"`);
 
+    const [titleCell, urlCell, descCell, spareCell, mediaCell] = [...row.children];
+    titleCell?.classList.add('sl-card-title');
+    descCell?.classList.add('sl-card-desc');
+    spareCell?.classList.add('sl-card-spare');
+    mediaCell?.classList.add('sl-card-config');
+
+    const url = cellUrl(urlCell);
+
+    // synthetic eyebrow: card number + delivery host
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'sl-card-eyebrow';
+    const num = document.createElement('span');
+    num.textContent = `${index + 1}`.padStart(2, '0');
+    const host = document.createElement('span');
+    host.textContent = hostLabel(url);
+    eyebrow.append(num, host);
+    row.prepend(eyebrow);
+
+    // actions: synthetic visit link + the authored URL cell, moved intact
+    if (urlCell) {
+      const actions = document.createElement('div');
+      actions.className = 'sl-card-actions';
+      if (url) {
+        const visit = document.createElement('a');
+        visit.className = 'sl-visit';
+        visit.href = url;
+        visit.target = '_blank';
+        visit.rel = 'noopener';
+        visit.textContent = 'Open site';
+        actions.append(visit);
+      }
+      urlCell.classList.add('sl-url');
+      actions.append(urlCell);
+      row.append(actions);
+    }
+
+    const mediaUrl = cellUrl(mediaCell);
+    if (mediaUrl) {
+      row.classList.add('sl-card-has-media');
+      const media = document.createElement('div');
+      media.className = 'sl-card-media';
+      const video = document.createElement('video');
+      video.src = mediaUrl;
+      video.muted = true;
+      video.defaultMuted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      video.setAttribute('muted', '');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('aria-hidden', 'true');
+      media.append(video);
+      row.prepend(media);
+      wireVideoPreview(row, video);
+    }
+  });
+
+  // synthetic summary chip bar
   const summary = document.createElement('div');
   summary.className = 'sl-summary';
-  summary.innerHTML = `
-    <span>${cards.length} sites</span>
-    <span>${groupLabel(block)}</span>
-  `;
-
-  const grid = document.createElement('div');
-  grid.className = cards.length > 3 ? 'sl-grid sl-grid-many' : 'sl-grid';
-  cards.forEach((card) => grid.append(card));
-
-  block.replaceChildren(summary, grid);
+  const count = document.createElement('span');
+  count.textContent = `${rows.length} sites`;
+  const label = document.createElement('span');
+  label.textContent = groupLabel(block);
+  summary.append(count, label);
+  block.prepend(summary);
 }
