@@ -10,13 +10,14 @@
  *   1. site name
  *   2. site url (plain text or link)
  *   3. description
- *   4. reserved (authored status, unused today)
+ *   4. status (optional): live | preview | frozen | private | target —
+ *      rendered as a chip; the authored cell is moved intact into the eyebrow
  *   5. media url (splash video, optional)
  */
 
 function hostLabel(url) {
   try {
-    return new URL(url).hostname.replace('.aem.live', '');
+    return new URL(url).hostname.replace(/\.aem\.(live|page)$/, '');
   } catch {
     return url;
   }
@@ -80,7 +81,13 @@ export default function decorate(block) {
     const [titleCell, urlCell, descCell, spareCell, mediaCell] = [...row.children];
     titleCell?.classList.add('sl-card-title');
     descCell?.classList.add('sl-card-desc');
-    spareCell?.classList.add('sl-card-spare');
+    const status = spareCell?.textContent.trim().toLowerCase() || '';
+    if (status) {
+      spareCell.classList.add('sl-card-status');
+      row.classList.add(`sl-status-${status.replace(/[^a-z0-9]+/g, '-')}`);
+    } else {
+      spareCell?.classList.add('sl-card-spare');
+    }
     mediaCell?.classList.add('sl-card-config');
 
     const url = cellUrl(urlCell);
@@ -93,6 +100,7 @@ export default function decorate(block) {
     const host = document.createElement('span');
     host.textContent = hostLabel(url);
     eyebrow.append(num, host);
+    if (status) eyebrow.append(spareCell);
     row.prepend(eyebrow);
 
     // actions: synthetic visit link + the authored URL cell, moved intact

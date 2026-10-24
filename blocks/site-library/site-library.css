@@ -181,6 +181,33 @@
   text-decoration: none;
 }
 
+.site-library .sl-card-status {
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--sl-muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.site-library .sl-status-live .sl-card-status {
+  color: var(--sl-green);
+}
+
+.site-library .sl-status-preview .sl-card-status {
+  color: var(--sl-link);
+}
+
+.site-library .sl-status-frozen .sl-card-status {
+  color: #e3b341;
+}
+
+.site-library .sl-status-private .sl-card-status,
+.site-library .sl-status-target .sl-card-status {
+  color: #c4a7f5;
+}
+
 .site-library .sl-card-spare,
 .site-library .sl-card-config,
 .site-library .sl-card > div:empty {
